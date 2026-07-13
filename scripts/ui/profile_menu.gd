@@ -3,9 +3,9 @@ extends Control
 const UIStyle := preload("res://scripts/ui/ui_style.gd")
 
 func _ready() -> void:
-    if not _is_logged_in():
-        _go_to_login()
-        return
+	if not _is_logged_in():
+		call_deferred("_go_to_login")
+		return
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
     UIStyle.apply_theme(self)
     _build()

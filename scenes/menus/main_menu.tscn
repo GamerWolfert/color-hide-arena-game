@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/menus/main_menu_background.tscn" id="2"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -11,3 +12,187 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
+[node name="BackgroundViewport" type="SubViewportContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+stretch = true
+
+[node name="World" type="SubViewport" parent="BackgroundViewport"]
+handle_input_locally = false
+size = Vector2i(1280, 720)
+render_target_update_mode = 4
+
+[node name="MenuBackground" parent="BackgroundViewport/World" instance=ExtResource("2")]
+
+[node name="DarkOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.01, 0.018, 0.05, 0.35)
+
+[node name="SafeArea" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 34.0
+offset_top = 28.0
+offset_right = -34.0
+offset_bottom = -78.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ContentLayout" type="HBoxContainer" parent="SafeArea"]
+layout_mode = 2
+theme_override_constants/separation = 26
+
+[node name="LeftMenu" type="PanelContainer" parent="SafeArea/ContentLayout"]
+custom_minimum_size = Vector2(410, 0)
+layout_mode = 2
+
+[node name="MenuMargin" type="MarginContainer" parent="SafeArea/ContentLayout/LeftMenu"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="MenuContent" type="VBoxContainer" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin"]
+layout_mode = 2
+theme_override_constants/separation = 9
+
+[node name="Logo" type="VBoxContainer" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent"]
+layout_mode = 2
+theme_override_constants/separation = -4
+
+[node name="LogoTop" type="Label" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo"]
+layout_mode = 2
+text = "MECCHA"
+
+[node name="LogoBottom" type="Label" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo"]
+layout_mode = 2
+text = "CHAMELEON"
+
+[node name="ByLabel" type="Label" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo"]
+layout_mode = 2
+text = "by GamerWolfertYT"
+
+[node name="Subtitle" type="Label" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent"]
+layout_mode = 2
+text = "CAMOUFLAGE. HIDE. OUTSMART."
+
+[node name="ButtonScroll" type="ScrollContainer" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent"]
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ButtonContainer" type="VBoxContainer" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/ButtonScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="MiddleSpace" type="Control" parent="SafeArea/ContentLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="RightProfilePanel" type="PanelContainer" parent="SafeArea/ContentLayout"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+
+[node name="ProfileMargin" type="MarginContainer" parent="SafeArea/ContentLayout/RightProfilePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ProfileContent" type="VBoxContainer" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ProfileHeading" type="Label" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent"]
+layout_mode = 2
+text = "PLAYER PROFILE"
+
+[node name="ProfileNameLabel" type="Label" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent"]
+layout_mode = 2
+text = "Profiel wordt geladen..."
+
+[node name="ProfileStatsLabel" type="Label" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent"]
+layout_mode = 2
+text = "Level 1\nXP 0 / 100\nStatus Online\nSkin Neutraal\nLaatste modus Training"
+
+[node name="DeviceLabel" type="Label" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent"]
+layout_mode = 2
+text = "Apparaat wordt gedetecteerd..."
+
+[node name="BottomInfoBar" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 34.0
+offset_top = -62.0
+offset_right = -34.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="BottomInfoContent" type="HBoxContainer" parent="BottomInfoBar"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="NewsLabel" type="Label" parent="BottomInfoBar/BottomInfoContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Nieuws: 3D menu prototype actief"
+
+[node name="ServerStatusLabel" type="Label" parent="BottomInfoBar/BottomInfoContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Serverstatus: voorbereiding"
+
+[node name="VersionLabel" type="Label" parent="BottomInfoBar/BottomInfoContent"]
+layout_mode = 2
+text = "Version 0.1.0 Alpha"
+
+[node name="TransitionLayer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.005, 0.008, 0.018, 1)
+
+[node name="StatusDialog" type="AcceptDialog" parent="."]
+title = "Meccha Chameleon"
+
+[node name="HoverAudio" type="AudioStreamPlayer" parent="."]
+bus = &"Effects"
+
+[node name="ClickAudio" type="AudioStreamPlayer" parent="."]
+bus = &"Effects"
+
+[node name="BackAudio" type="AudioStreamPlayer" parent="."]
+bus = &"Effects"
+
+[node name="MenuAmbience" type="AudioStreamPlayer" parent="."]
+bus = &"Music"
+
+[node name="IdleAudio" type="AudioStreamPlayer" parent="."]
+bus = &"Effects"
