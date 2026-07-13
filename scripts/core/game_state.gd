@@ -12,7 +12,7 @@ enum State {
 
 signal state_changed(state: State)
 
-const MAIN_MENU_SCENE := "res://scenes/menus/MainMenu.tscn"
+const MAIN_MENU_SCENE := "res://scenes/menus/main_menu.tscn"
 const LOADING_SCENE := "res://scenes/menus/LoadingScreen.tscn"
 const TRAINING_SCENE := "res://scenes/gameplay/TrainingArena.tscn"
 
@@ -29,6 +29,10 @@ func set_state(state: State) -> void:
 	state_changed.emit(current_state)
 
 func load_scene(target_scene: String, tip: String = "") -> void:
+	var scene_manager := get_node_or_null("/root/SceneManager")
+	if scene_manager:
+		scene_manager.change_scene(target_scene, true, tip)
+		return
 	next_scene_path = target_scene
 	loading_tip = tip
 	set_state(State.LOADING)
@@ -38,8 +42,11 @@ func go_to_main_menu() -> void:
 	set_state(State.MAIN_MENU)
 	get_tree().paused = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+	var scene_manager := get_node_or_null("/root/SceneManager")
+	if scene_manager:
+		scene_manager.change_scene(MAIN_MENU_SCENE, false)
+	else:
+		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 
 func start_training() -> void:
 	load_scene(TRAINING_SCENE, "Training")
-

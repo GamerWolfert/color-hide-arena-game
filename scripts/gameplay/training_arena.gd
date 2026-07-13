@@ -2,6 +2,7 @@ extends Node3D
 
 const HiderBotScript := preload("res://scripts/characters/hider_bot.gd")
 const SeekerBotScript := preload("res://scripts/characters/seeker_bot.gd")
+const MobileControlsScript := preload("res://scripts/input/mobile_controls.gd")
 
 @onready var player := $Player
 @onready var hud := $HUD
@@ -14,6 +15,7 @@ var seeker_bots: Array = []
 
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	_add_mobile_controls_if_needed()
 	_spawn_bots()
 	hud.bind_player(player)
 	hud.bind_round_manager(round_manager)
@@ -21,6 +23,17 @@ func _ready() -> void:
 	hud._on_hider_count_changed(round_manager.remaining_hiders, round_manager.total_hiders)
 	player.seeker_scanned.connect(round_manager.register_scan)
 	pause_menu.restart_requested.connect(round_manager.restart_round)
+
+func _add_mobile_controls_if_needed() -> void:
+	var device := get_node_or_null("/root/DeviceService")
+	if device == null or (not device.is_mobile() and not device.has_touchscreen()):
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "MobileControlsLayer"
+	add_child(layer)
+	var controls := MobileControlsScript.new()
+	controls.name = "MobileControls"
+	layer.add_child(controls)
 
 func _spawn_bots() -> void:
 	var hide_spots: Array = training_map.get_hide_spots()

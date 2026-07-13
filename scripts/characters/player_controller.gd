@@ -96,7 +96,12 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y -= gravity * delta
 
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	var input_dir := Vector2.ZERO
+	var input_service := get_node_or_null("/root/InputService")
+	if input_service:
+		input_dir = input_service.get_move_vector()
+	else:
+		input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var direction := _camera_relative_direction(input_dir)
 	var target_speed := _target_speed(crouching)
 	var control := 1.0 if is_on_floor() else air_control
@@ -202,12 +207,24 @@ func _rotate_camera(yaw_delta: float, pitch_delta: float) -> void:
 	pitch_root.rotation.x = _pitch
 
 func _handle_controller_look(delta: float) -> void:
-	var look := Vector2(
-		Input.get_action_strength("look_right") - Input.get_action_strength("look_left"),
-		Input.get_action_strength("look_down") - Input.get_action_strength("look_up")
-	)
+	var look := Vector2.ZERO
+	var input_service := get_node_or_null("/root/InputService")
+	if input_service:
+		look = input_service.get_look_vector()
+	else:
+		look = Vector2(
+			Input.get_action_strength("look_right") - Input.get_action_strength("look_left"),
+			Input.get_action_strength("look_down") - Input.get_action_strength("look_up")
+		)
 	if look.length() > 0.05:
-		_rotate_camera(-look.x * controller_look_speed * delta, -look.y * controller_look_speed * delta)
+		var settings := get_node_or_null("/root/SettingsService")
+		var sensitivity := controller_look_speed
+		if settings:
+			sensitivity = settings.controller_sensitivity
+		var pitch_input := -look.y
+		if settings and settings.invert_y:
+			pitch_input = look.y
+		_rotate_camera(-look.x * sensitivity * delta, pitch_input * sensitivity * delta)
 
 func _apply_crouch(crouching: bool, delta: float) -> void:
 	var target_height := _crouching_height if crouching else _standing_height

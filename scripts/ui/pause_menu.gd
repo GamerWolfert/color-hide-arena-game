@@ -64,7 +64,7 @@ func _add_button(parent: VBoxContainer, text: String, callback: Callable) -> voi
 func _open_settings() -> void:
 	if settings_panel and is_instance_valid(settings_panel):
 		settings_panel.queue_free()
-	var scene := load("res://scenes/menus/SettingsMenu.tscn") as PackedScene
+	var scene := load("res://scenes/menus/settings_menu.tscn") as PackedScene
 	settings_panel = scene.instantiate()
 	add_child(settings_panel)
 

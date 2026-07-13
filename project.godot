@@ -17,7 +17,10 @@ config/features=PackedStringArray("4.7")
 [autoload]
 
 GameState="*res://scripts/core/game_state.gd"
+DeviceService="*res://scripts/services/device_service.gd"
+InputService="*res://scripts/input/input_service.gd"
 SettingsService="*res://scripts/services/settings_service.gd"
+SceneManager="*res://scripts/core/scene_manager.gd"
 SupabaseConfig="*uid://dr4j6mmsy51ls"
 SessionManager="*uid://cu66eiijfht4n"
 AuthService="*uid://dojs31ectwgvi"

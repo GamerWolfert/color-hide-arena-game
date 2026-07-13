@@ -66,4 +66,8 @@ func _start_loading() -> void:
 	var target_scene := "res://scenes/gameplay/TrainingArena.tscn"
 	if game_state:
 		target_scene = game_state.next_scene_path
-	get_tree().change_scene_to_file(target_scene)
+	var scene_manager := get_node_or_null("/root/SceneManager")
+	if scene_manager:
+		scene_manager.finish_loading(target_scene)
+	else:
+		get_tree().change_scene_to_file(target_scene)

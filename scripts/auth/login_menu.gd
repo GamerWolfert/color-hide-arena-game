@@ -283,7 +283,11 @@ func _friendly_error(message: String) -> String:
 	return "Er ging iets mis. Probeer het opnieuw."
 
 func _go_to_main_menu() -> void:
-	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+	var scene_manager := get_node_or_null("/root/SceneManager")
+	if scene_manager:
+		scene_manager.change_scene(MAIN_MENU_SCENE, false)
+	else:
+		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 
 func _ensure_main_menu_scene() -> void:
 	if ResourceLoader.exists(MAIN_MENU_SCENE):

@@ -4,6 +4,7 @@ var access_token := ""
 var refresh_token := ""
 var user_id := ""
 var email := ""
+var display_name := ""
 
 func is_logged_in() -> bool:
 	return not access_token.is_empty() and not user_id.is_empty() and _is_access_token_current()
@@ -16,6 +17,9 @@ func set_session(data: Dictionary) -> bool:
 	refresh_token = str(data.get("refresh_token", ""))
 	user_id = str(user_data.get("id", ""))
 	email = str(user_data.get("email", ""))
+	var metadata = user_data.get("user_metadata", {})
+	if metadata is Dictionary:
+		display_name = str(metadata.get("display_name", metadata.get("username", "")))
 	if not is_logged_in():
 		_clear_memory()
 		return false
@@ -33,7 +37,8 @@ func save_session() -> void:
 		"access_token": access_token,
 		"refresh_token": refresh_token,
 		"user_id": user_id,
-		"email": email
+		"email": email,
+		"display_name": display_name
 	}))
 
 func load_session() -> void:
@@ -53,6 +58,7 @@ func load_session() -> void:
 		refresh_token = str(data.get("refresh_token", ""))
 		user_id = str(data.get("user_id", ""))
 		email = str(data.get("email", ""))
+		display_name = str(data.get("display_name", ""))
 		if not is_logged_in():
 			logout()
 
@@ -67,6 +73,7 @@ func _clear_memory() -> void:
 	refresh_token = ""
 	user_id = ""
 	email = ""
+	display_name = ""
 
 func _is_access_token_current() -> bool:
 	var parts := access_token.split(".")
