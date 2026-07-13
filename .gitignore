@@ -1,0 +1,35 @@
+# Godot 4 local editor and import cache
+.godot/
+*.log
+
+# Local exports and temporary build output
+/export/
+/exports/
+/builds/*
+!/builds/.gitkeep
+*.exe
+*.pck
+*.zip
+*.apk
+*.aab
+*.app
+
+# Local editor metadata
+.vscode/
+.idea/
+.fleet/
+
+# Local saves and OS files
+/saves/*
+!/saves/.gitkeep
+.DS_Store
+Thumbs.db
+
+# Local secrets and credentials
+.env
+.env.*
+*.secret
+*.pem
+*.key
+*service_role*
+*secret*
