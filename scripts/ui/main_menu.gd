@@ -42,6 +42,9 @@ const CREDITS_SCENE := "res://scenes/menus/credits_menu.tscn"
 
 var _menu_buttons: Array[Button] = []
 var _is_transitioning := false
+var _profile_data: Dictionary = {}
+var _stats_data: Dictionary = {}
+const XP_LEVEL_TARGET := 7500
 
 func _ready() -> void:
     if not _is_logged_in():
@@ -191,33 +194,52 @@ func _on_button_pressed(callback: Callable) -> void:
 
 func _update_profile() -> void:
     var session := get_node_or_null("/root/SessionManager")
-    var player_name := "Camouflage-speler"
-    if session and not session.display_name.is_empty():
-        player_name = str(session.display_name)
-    elif session and not session.email.is_empty():
-        player_name = str(session.email)
+    var player_name := _get_account_name(session)
+    profile_heading.text = "MIJN ACCOUNT"
     by_label.text = "by %s" % player_name
-    profile_name_label.text = "Welkom terug,\n%s" % player_name
+    profile_name_label.text = player_name
     var history := get_node_or_null("/root/SessionHistoryService")
     var last_session: Dictionary = history.get_last_session() if history else {}
-    var last_mode := str(last_session.get("mode", "Nog geen sessie"))
-    var last_xp := int(last_session.get("xp", 0))
-    profile_stats_label.text = "Level 1\nXP %d / 7500\nStatus Online\nSkin Neutraal\nLaatste modus %s" % [last_xp, last_mode]
+    _refresh_profile_stats(last_session)
     _update_latest_session(last_session)
     var device := _device_service()
-	device_label.text = "Apparaat: %s" % (device.get_summary() if device else "Onbekend")
+    device_label.text = "Apparaat: %s" % (device.get_summary() if device else "Onbekend")
 
 func _on_cloud_profile_loaded(profile: Dictionary) -> void:
-	var level := int(profile.get("level", 1))
-	var xp := int(profile.get("xp", 0))
-	var skin := str(profile.get("selected_skin", "neutral"))
-	profile_stats_label.text = "Level %d\nXP %d\nStatus Online\nSkin %s\nLaatste modus %s" % [level, xp, skin, _last_session_mode()]
+    _profile_data = profile.duplicate(true)
+    _update_profile()
 
 func _on_cloud_stats_loaded(stats: Dictionary) -> void:
-	var level_text := profile_stats_label.text
-	if level_text.is_empty():
-		level_text = "Level 1"
-	profile_stats_label.text = "%s\nRondes %d  Wins %d" % [level_text, int(stats.get("rounds", 0)), int(stats.get("wins", 0))]
+    _stats_data = stats.duplicate(true)
+    _update_profile()
+
+func _refresh_profile_stats(last_session: Dictionary) -> void:
+    var level := maxi(int(_profile_data.get("level", 1)), 1)
+    var profile_xp := maxi(int(_profile_data.get("xp", 0)), 0)
+    var local_xp := maxi(int(_stats_data.get("xp_earned", 0)), 0)
+    var xp := maxi(profile_xp, local_xp)
+    var skin_id := str(_profile_data.get("selected_skin", "neutral"))
+    var skin_name := "Neutraal" if skin_id.is_empty() or skin_id == "neutral" else skin_id.capitalize()
+    var last_mode := str(last_session.get("mode", "Nog geen sessie"))
+    profile_stats_label.text = "Level %d\nXP %d / %d\nStatus Online\nSkin %s\nLaatste modus %s\nRondes %d  Wins %d" % [
+        level,
+        xp,
+        XP_LEVEL_TARGET,
+        skin_name,
+        last_mode,
+        int(_stats_data.get("rounds", 0)),
+        int(_stats_data.get("wins", 0))
+    ]
+
+func _get_account_name(session: Node) -> String:
+    var profile_name := str(_profile_data.get("username", "")).strip_edges()
+    if not profile_name.is_empty():
+        return profile_name
+    if session and not str(session.get("display_name")).is_empty():
+        return str(session.get("display_name"))
+    if session and not str(session.get("email")).is_empty():
+        return str(session.get("email"))
+    return "MijnAccount"
 
 func _last_session_mode() -> String:
 	var history := get_node_or_null("/root/SessionHistoryService")

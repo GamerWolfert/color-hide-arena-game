@@ -84,7 +84,7 @@ text = "CHAMELEON"
 
 [node name="ByLabel" type="Label" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo"]
 layout_mode = 2
-text = "by Camouflage-speler"
+text = "by MijnAccount"
 
 [node name="Subtitle" type="Label" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent"]
 layout_mode = 2
@@ -129,15 +129,15 @@ theme_override_constants/separation = 10
 
 [node name="ProfileHeading" type="Label" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent"]
 layout_mode = 2
-text = "PLAYER PROFILE"
+text = "MIJN ACCOUNT"
 
 [node name="ProfileNameLabel" type="Label" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent"]
 layout_mode = 2
-text = "Profiel wordt geladen..."
+text = "Account laden..."
 
 [node name="ProfileStatsLabel" type="Label" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent"]
 layout_mode = 2
-text = "Level 1\nXP 0 / 100\nStatus Online\nSkin Neutraal\nLaatste modus Training"
+text = "Level 1\nXP 0 / 7500\nStatus Online\nSkin Neutraal\nLaatste modus Nog geen sessie"
 
 [node name="DeviceLabel" type="Label" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent"]
 layout_mode = 2
