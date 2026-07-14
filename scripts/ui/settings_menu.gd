@@ -11,6 +11,9 @@ func _ready() -> void:
         call_deferred("_go_to_login")
         return
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+    var cursor := get_node_or_null("/root/CursorManager")
+    if cursor:
+        cursor.set_mode(cursor.CursorMode.UI)
     UI_STYLE.apply_theme(self)
     _build()
 

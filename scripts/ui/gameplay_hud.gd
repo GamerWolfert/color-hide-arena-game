@@ -3,6 +3,8 @@ extends CanvasLayer
 const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 const PaintModeScene := preload("res://scenes/ui/paint_mode_ui.tscn")
 const PoseManagerScript := preload("res://scripts/characters/pose_manager.gd")
+const PoseWheelScene := preload("res://scenes/ui/pose_wheel.tscn")
+const RoundTimerScene := preload("res://scenes/ui/round_timer_hud.tscn")
 
 var root: Control
 var role_label: Label
@@ -27,7 +29,10 @@ var paint_ui: Control
 var _player: Node
 var _round_manager: Node
 var _mobile_controls: Control
+var _action_panel: PanelContainer
 var _pose_menu: PanelContainer
+var _pose_wheel: Control
+var _round_timer_ui: Control
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -73,6 +78,8 @@ func bind_player(player: Node) -> void:
 
 func bind_round_manager(round_manager: Node) -> void:
 	_round_manager = round_manager
+	if _round_timer_ui and _round_timer_ui.has_method("bind_round_manager"):
+		_round_timer_ui.bind_round_manager(round_manager)
 	if round_manager.has_signal("phase_changed") and not round_manager.phase_changed.is_connected(_on_phase_changed):
 		round_manager.phase_changed.connect(_on_phase_changed)
 	if round_manager.has_signal("timer_changed") and not round_manager.timer_changed.is_connected(_on_timer_changed):
@@ -128,19 +135,11 @@ func _build() -> void:
 	player_box.add_child(part_label)
 	player_box.add_child(pose_label)
 
-	var round_card := _panel(Control.PRESET_CENTER_TOP, Vector4(-190, 16, 190, 84), Color(0.025, 0.045, 0.085, 0.88), Color(0.55, 0.27, 0.95, 0.82))
-	root.add_child(round_card)
-	var round_box := _box(round_card, 2)
-	phase_label = _label("WACHTEN", 13)
-	phase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	round_box.add_child(phase_label)
-	timer_label = _label("00:00", 30)
-	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	timer_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.25))
-	round_box.add_child(timer_label)
-	counts_label = _label("HIDERS 0  •  SEEKERS 0", 11)
-	counts_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	round_box.add_child(counts_label)
+	_round_timer_ui = RoundTimerScene.instantiate()
+	root.add_child(_round_timer_ui)
+	phase_label = _round_timer_ui.phase_label
+	timer_label = _round_timer_ui.timer_label
+	counts_label = _round_timer_ui.counts_label
 
 	var intel_card := _panel(Control.PRESET_TOP_RIGHT, Vector4(-250, 18, -18, 142), Color(0.025, 0.045, 0.085, 0.84), Color(0.55, 0.27, 0.95, 0.72))
 	root.add_child(intel_card)
@@ -156,6 +155,7 @@ func _build() -> void:
 	eyedropper_label = _label("PIPET  klaar", 12)
 	intel_box.add_child(paint_status_label)
 	intel_box.add_child(eyedropper_label)
+	_build_action_panel()
 
 	message_label = _label("", 18)
 	message_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -268,6 +268,8 @@ func _refresh_device_controls() -> void:
 	var mobile: bool = device != null and (device.is_mobile() or device.has_touchscreen())
 	if settings:
 		mobile = mobile or settings.force_mobile_ui_on_desktop
+	if _action_panel:
+		_action_panel.visible = not mobile
 	if mobile and not _mobile_controls:
 		_mobile_controls = _build_mobile_buttons()
 	elif not mobile and _mobile_controls:
@@ -298,6 +300,59 @@ func _build_mobile_buttons() -> Control:
 	grid.add_child(_mobile_button("Scan", func(): if _player: _player.scan()))
 	grid.add_child(_mobile_button("Pauze", _toggle_pause))
 	return box
+
+func _build_action_panel() -> void:
+	_action_panel = _panel(Control.PRESET_TOP_RIGHT, Vector4(-250, 154, -18, 398), Color(0.025, 0.045, 0.085, 0.84), Color(0.55, 0.27, 0.95, 0.72))
+	_action_panel.name = "ActionPanel"
+	root.add_child(_action_panel)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 4)
+	_action_panel.add_child(content)
+	var title := _label("ACTIES", 12)
+	title.add_theme_color_override("font_color", Color(0.75, 0.48, 1.0))
+	content.add_child(title)
+	content.add_child(_action_button("Taunt", "taunt", _on_taunt_pressed, Color(0.55, 0.27, 0.95, 0.9)))
+	content.add_child(_action_button("Posewiel", "pose_menu", _toggle_pose_menu, Color(0.10, 0.82, 0.78, 0.9)))
+	content.add_child(_action_button("Paint Mode", "paint_mode", _toggle_paint_mode, Color(0.10, 0.82, 0.78, 0.9)))
+	content.add_child(_action_button("Rotatie vergrendelen", "toggle_rotation_lock", _toggle_rotation_lock, Color(0.55, 0.27, 0.95, 0.9)))
+	content.add_child(_action_button("Pauzeren", "pause", _toggle_pause, Color(0.95, 0.72, 0.22, 0.9)))
+
+func _action_button(label_text: String, action: String, callback: Callable, accent: Color) -> Button:
+	var button := Button.new()
+	button.text = "[%s]  %s" % [_action_key(action, "-") , label_text]
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size = Vector2(0, 32)
+	button.add_theme_font_size_override("font_size", 11)
+	button.add_theme_stylebox_override("normal", UI_STYLE.button(Color(0.04, 0.09, 0.15, 0.92), accent))
+	button.add_theme_stylebox_override("hover", UI_STYLE.button(Color(0.10, 0.06, 0.19, 0.98), Color(0.88, 0.42, 1.0, 1.0)))
+	button.add_theme_stylebox_override("pressed", UI_STYLE.button(Color(0.08, 0.20, 0.20, 1.0), Color(0.20, 1.0, 0.82, 1.0)))
+	button.pressed.connect(callback)
+	return button
+
+func _action_key(action: String, fallback: String) -> String:
+	if not InputMap.has_action(action):
+		return fallback
+	for event in InputMap.action_get_events(action):
+		if event is InputEventKey:
+			var code: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+			if code != 0:
+				return OS.get_keycode_string(code)
+		if event is InputEventMouseButton:
+			return "MUIS"
+	return fallback
+
+func _on_taunt_pressed() -> void:
+	if _player:
+		_player.taunt()
+
+func _toggle_paint_mode() -> void:
+	if paint_ui:
+		paint_ui.toggle()
+
+func _toggle_rotation_lock() -> void:
+	if _player:
+		_player.rotation_locked = not _player.rotation_locked
+		show_message("Rotatie %s" % ("vergrendeld" if _player.rotation_locked else "vrij"))
 
 func _mobile_button(text: String, callback: Callable) -> Button:
 	var button := Button.new()
@@ -385,6 +440,7 @@ func _on_scanner_cooldown(ready: bool, seconds_left: float) -> void:
 
 func _on_paint_mode_toggled(open: bool) -> void:
 	paint_status_label.text = "PAINT  open" if open else "PAINT  gesloten"
+	_set_cursor_mode(2 if open else 0)
 
 func _toggle_pause() -> void:
 	if _player:
@@ -393,6 +449,16 @@ func _toggle_pause() -> void:
 			pause_menu.toggle_pause()
 
 func _toggle_pose_menu() -> void:
+	if _pose_wheel == null:
+		_pose_wheel = PoseWheelScene.instantiate()
+		_pose_wheel.name = "PoseWheel"
+		root.add_child(_pose_wheel)
+	if _pose_wheel.visible:
+		_pose_wheel.close_wheel()
+	else:
+		_pose_wheel.open(_player)
+	return
+	# Legacy fallback remains below for old saved scenes.
 	if _pose_menu and is_instance_valid(_pose_menu):
 		if _pose_menu.visible:
 			_close_pose_menu()
@@ -451,3 +517,10 @@ func _close_pose_menu() -> void:
 	if input_service:
 		input_service.set_touch_input_blocked(false)
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+func _set_cursor_mode(mode: int) -> void:
+	var cursor := get_node_or_null("/root/CursorManager")
+	if cursor:
+		cursor.set_mode(mode)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if mode != 0 else Input.MOUSE_MODE_CAPTURED)

@@ -51,6 +51,9 @@ func _ready() -> void:
     if game_state:
         game_state.set_state(game_state.State.MAIN_MENU)
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+    var cursor := get_node_or_null("/root/CursorManager")
+    if cursor:
+        cursor.set_mode(cursor.CursorMode.UI)
     UI_STYLE.apply_theme(self)
     _style_static_controls()
     _build_menu_buttons()

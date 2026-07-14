@@ -30,7 +30,7 @@ signal scanner_cooldown_changed(ready: bool, seconds_left: float)
 @onready var spring_arm: SpringArm3D = $YawRoot/PitchRoot/SpringArm3D
 @onready var camera: Camera3D = $YawRoot/PitchRoot/SpringArm3D/Camera3D
 @onready var ray: RayCast3D = $YawRoot/PitchRoot/SpringArm3D/Camera3D/RayCast3D
-@onready var body_mesh: MeshInstance3D = $Body
+@onready var character_visual: Node3D = $MecchaCharacter
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 
 var is_hider := true
@@ -60,14 +60,18 @@ var _part_names := ["Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg
 var _pose_names := PoseManagerScript.POSE_NAMES
 
 func _ready() -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	_set_cursor_mode(0)
+	# Keep the third-person arm from colliding with the player's own capsule.
+	spring_arm.add_excluded_object(get_rid())
 	ray.add_exception(self)
 	last_frame_position = global_position
-	_build_body_parts()
-	pose_manager = PoseManagerScript.new()
-	pose_manager.name = "PoseManager"
-	add_child(pose_manager)
-	pose_manager.setup(body_parts)
+	body_parts = character_visual.get_body_parts() if character_visual.has_method("get_body_parts") else {}
+	pose_manager = character_visual.get_pose_manager() if character_visual.has_method("get_pose_manager") else null
+	if pose_manager == null:
+		pose_manager = PoseManagerScript.new()
+		pose_manager.name = "PoseManager"
+		add_child(pose_manager)
+		pose_manager.setup(body_parts)
 	pose_manager.pose_changed.connect(_on_pose_changed)
 	_build_scanner()
 	apply_color(Color(0.82, 0.84, 0.78))
@@ -82,7 +86,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 		var pause_menu := get_node_or_null("../PauseMenu")
 		if pause_menu == null or not pause_menu.visible:
-			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			_set_cursor_mode(0)
 			get_viewport().set_input_as_handled()
 			return
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
@@ -206,7 +210,6 @@ func set_shadow_enabled(value: bool) -> void:
 	shadow_enabled = value
 	for part in body_parts.values():
 		part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow_enabled else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	body_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow_enabled else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 func set_shadow_policy(allowed: bool) -> void:
 	shadow_toggle_allowed = allowed
@@ -301,9 +304,11 @@ func apply_color(color: Color) -> void:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = 0.74
-	body_mesh.material_override = mat
-	for part_name in body_parts.keys():
-		_set_part_color(part_name, color)
+	if character_visual.has_method("apply_color"):
+		character_visual.apply_color(color)
+	else:
+		for part_name in body_parts.keys():
+			_set_part_color(part_name, color)
 
 func paint_selected_part(color: Color = Color(-1, -1, -1, -1)) -> void:
 	if not is_hider:
@@ -400,7 +405,7 @@ func _apply_crouch(crouching: bool, delta: float) -> void:
 	if collision_shape.shape is CapsuleShape3D:
 		var capsule := collision_shape.shape as CapsuleShape3D
 		capsule.height = move_toward(capsule.height, target_height, 5.0 * delta)
-	body_mesh.scale.y = move_toward(body_mesh.scale.y, target_scale, 5.0 * delta)
+	character_visual.scale.y = move_toward(character_visual.scale.y, target_scale, 5.0 * delta)
 	yaw_root.position.y = move_toward(yaw_root.position.y, target_pitch_y, 5.0 * delta)
 	if crouching and pose_index == 0:
 		_set_pose(1)
@@ -414,7 +419,8 @@ func _slow_to_stop(delta: float) -> void:
 		velocity.y -= gravity * delta
 
 func _apply_camera_settings() -> void:
-	spring_arm.spring_length = 4.2
+	spring_arm.spring_length = maxf(spring_arm.spring_length, 5.6)
+	camera.fov = 62.0
 	camera.current = true
 
 func _mouse_sensitivity() -> float:
@@ -423,70 +429,12 @@ func _mouse_sensitivity() -> float:
 		return settings.mouse_sensitivity
 	return 0.0025
 
-func _build_body_parts() -> void:
-	body_mesh.visible = false
-	var root := Node3D.new()
-	root.name = "BodyParts"
-	add_child(root)
-	_add_part(root, "Torso", Vector3(0, 1.05, 0), Color(0.82, 0.84, 0.78), 0.38, 1.04)
-	_add_part(root, "Head", Vector3(0, 1.76, 0), Color(0.82, 0.84, 0.78), 0.36, 0.72, true)
-	_add_part(root, "LeftArm", Vector3(-0.54, 1.12, 0), Color(0.82, 0.84, 0.78), 0.14, 0.82)
-	_add_part(root, "RightArm", Vector3(0.54, 1.12, 0), Color(0.82, 0.84, 0.78), 0.14, 0.82)
-	_add_part(root, "LeftLeg", Vector3(-0.22, 0.43, 0), Color(0.82, 0.84, 0.78), 0.17, 0.88)
-	_add_part(root, "RightLeg", Vector3(0.22, 0.43, 0), Color(0.82, 0.84, 0.78), 0.17, 0.88)
-	_add_face_details(root)
-	_highlight_selected_part()
-
-func _add_part(root: Node3D, part_name: String, pos: Vector3, color: Color, radius: float, height: float, sphere := false) -> void:
-	var mesh := MeshInstance3D.new()
-	mesh.name = part_name
-	mesh.position = pos
-	if sphere:
-		var sphere_mesh := SphereMesh.new()
-		sphere_mesh.radius = radius
-		sphere_mesh.height = height
-		mesh.mesh = sphere_mesh
+func _set_cursor_mode(mode: int) -> void:
+	var cursor := get_node_or_null("/root/CursorManager")
+	if cursor:
+		cursor.set_mode(mode)
 	else:
-		var capsule := CapsuleMesh.new()
-		capsule.radius = radius
-		capsule.height = height
-		mesh.mesh = capsule
-	mesh.set_meta("body_part", part_name)
-	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	root.add_child(mesh)
-	body_parts[part_name] = mesh
-	_set_part_color(part_name, color)
-
-func _add_face_details(root: Node3D) -> void:
-	var visor := MeshInstance3D.new()
-	visor.name = "FaceVisor"
-	var visor_mesh := SphereMesh.new()
-	visor_mesh.radius = 0.20
-	visor_mesh.height = 0.26
-	visor.mesh = visor_mesh
-	visor.position = Vector3(0.0, 1.78, -0.31)
-	visor.scale = Vector3(1.0, 0.72, 0.24)
-	var visor_material := StandardMaterial3D.new()
-	visor_material.albedo_color = Color(0.04, 0.18, 0.22)
-	visor_material.emission_enabled = true
-	visor_material.emission = Color(0.04, 0.55, 0.52)
-	visor_material.emission_energy_multiplier = 1.5
-	visor.material_override = visor_material
-	root.add_child(visor)
-	for side in [-1.0, 1.0]:
-		var shoulder := MeshInstance3D.new()
-		shoulder.name = "Shoulder%s" % ("L" if side < 0.0 else "R")
-		var shoulder_mesh := SphereMesh.new()
-		shoulder_mesh.radius = 0.18
-		shoulder_mesh.height = 0.30
-		shoulder.mesh = shoulder_mesh
-		shoulder.position = Vector3(side * 0.40, 1.42, 0.0)
-		shoulder.scale = Vector3(1.0, 0.72, 0.82)
-		var shoulder_material := StandardMaterial3D.new()
-		shoulder_material.albedo_color = Color(0.08, 0.48, 0.48)
-		shoulder_material.roughness = 0.52
-		shoulder.material_override = shoulder_material
-		root.add_child(shoulder)
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _set_part_color(part_name: String, color: Color) -> void:
 	if not body_parts.has(part_name):

@@ -15,7 +15,11 @@ var hider_bots: Array = []
 var seeker_bots: Array = []
 
 func _ready() -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	var cursor := get_node_or_null("/root/CursorManager")
+	if cursor:
+		cursor.set_mode(cursor.CursorMode.GAMEPLAY)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	_add_mobile_controls_if_needed()
 	_spawn_bots()
 	hud.bind_player(player)
@@ -58,7 +62,8 @@ func _spawn_bots() -> void:
 	seeker_bots.append(seeker)
 	round_manager.set_hiders(hider_bots)
 	round_manager.set_seekers(seeker_bots)
-	var debug_visuals := DebugVisualsScript.new()
-	debug_visuals.name = "DebugVisuals"
-	add_child(debug_visuals)
-	debug_visuals.setup([player] + hider_bots + seeker_bots)
+	if OS.is_debug_build():
+		var debug_visuals := DebugVisualsScript.new()
+		debug_visuals.name = "DebugVisuals"
+		add_child(debug_visuals)
+		debug_visuals.setup([player] + hider_bots + seeker_bots)

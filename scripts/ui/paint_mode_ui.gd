@@ -52,8 +52,12 @@ func toggle() -> void:
     visible = _shown
     paint_mode_toggled.emit(_shown)
     mouse_filter = Control.MOUSE_FILTER_STOP if _shown else Control.MOUSE_FILTER_IGNORE
+    var cursor := get_node_or_null("/root/CursorManager")
     if _shown:
-        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+        if cursor:
+            cursor.set_mode(cursor.CursorMode.PAINT)
+        else:
+            Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
         var input_service := get_node_or_null("/root/InputService")
         if input_service:
             input_service.set_touch_input_blocked(true)
@@ -78,20 +82,20 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build() -> void:
     panel = PanelContainer.new()
     panel.set_anchors_preset(Control.PRESET_CENTER)
-    panel.offset_left = -230
-    panel.offset_top = -200
-    panel.offset_right = 230
-    panel.offset_bottom = 200
+    panel.offset_left = -250
+    panel.offset_top = -330
+    panel.offset_right = 250
+    panel.offset_bottom = 330
     panel.mouse_filter = Control.MOUSE_FILTER_STOP
     panel.add_theme_stylebox_override("panel", UI_STYLE.panel(Color(0.025, 0.045, 0.09, 0.97), Color(0.18, 0.86, 0.82, 0.95)))
     add_child(panel)
     var outer := VBoxContainer.new()
-    outer.add_theme_constant_override("separation", 8)
+    outer.add_theme_constant_override("separation", 5)
     panel.add_child(outer)
     var title := Label.new()
     title.text = "PAINT MODE"
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    UI_STYLE.title(title, 30)
+    UI_STYLE.title(title, 24)
     outer.add_child(title)
     var subtitle := Label.new()
     subtitle.text = "Kopieer een oppervlak of verf één lichaamsdeel."
@@ -147,7 +151,7 @@ func _build() -> void:
 
     var actions := HBoxContainer.new()
     outer.add_child(actions)
-    var eyedropper := _button("Pipet", func(): manager.eyedropper())
+    var eyedropper := _button("Pipet", _use_eyedropper)
     var apply := _button("Toepassen", func(): manager.apply())
     var close_button := _button("Sluiten", close)
     actions.add_child(eyedropper)
@@ -192,7 +196,7 @@ func _slider(label_text: String, minimum: float, maximum: float, value: float) -
 func _button(text: String, callback: Callable) -> Button:
     var button := Button.new()
     button.text = text
-    button.custom_minimum_size = Vector2(108, 38)
+    button.custom_minimum_size = Vector2(112, 34)
     button.add_theme_stylebox_override("normal", UI_STYLE.button(Color(0.06, 0.13, 0.18, 0.96), Color(0.55, 0.25, 0.92, 0.90)))
     button.pressed.connect(callback)
     return button
@@ -238,3 +242,11 @@ func _on_paint_applied(part_name: String, _color: Color) -> void:
 func _on_hex_submitted(value: String) -> void:
     var parsed := Color.from_string(value.strip_edges(), manager.current_color)
     manager.set_color(parsed)
+
+func _use_eyedropper() -> void:
+    var cursor := get_node_or_null("/root/CursorManager")
+    if cursor:
+        cursor.set_mode(cursor.CursorMode.EYEDROPPER)
+    manager.eyedropper()
+    if cursor:
+        cursor.set_mode(cursor.CursorMode.PAINT)

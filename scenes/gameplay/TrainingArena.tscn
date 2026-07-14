@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/training_arena.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/maps/TrainingMap.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/maps/candy_workshop.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/characters/Player.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/ui/gameplay_hud.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PauseMenu.tscn" id="5"]
@@ -21,12 +21,12 @@ shadow_enabled = true
 [node name="TrainingMap" parent="." instance=ExtResource("2")]
 
 [node name="Player" parent="." instance=ExtResource("3")]
-position = Vector3(0, 1.2, 18)
+position = Vector3(0, 1.2, 4)
 
 [node name="Spawns" type="Node3D" parent="."]
 
 [node name="HiderSpawn" type="Marker3D" parent="Spawns"]
-position = Vector3(0, 1.2, 18)
+position = Vector3(0, 1.2, 4)
 
 [node name="SeekerSpawn" type="Marker3D" parent="Spawns"]
 position = Vector3(0, 1.2, -18)
