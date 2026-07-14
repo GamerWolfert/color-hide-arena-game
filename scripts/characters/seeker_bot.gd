@@ -5,6 +5,8 @@ signal bot_found_hider(target: Node)
 @export var move_speed := 3.2
 @export var investigate_radius := 4.2
 @export var scan_interval := 1.2
+@export var max_scanner_energy := 100.0
+@export var scan_cooldown := 1.0
 
 var patrol_points: Array = []
 var target_index := 0
@@ -12,6 +14,10 @@ var scan_timer := 0.0
 var hider_nodes: Array = []
 var navigation_agent: NavigationAgent3D
 var investigating := false
+var scanner_energy := 100.0
+var scanner_ready := true
+var cooldown_timer := 0.0
+var search_enabled := false
 
 func _ready() -> void:
 	add_to_group("seekers")
@@ -34,17 +40,30 @@ func reset_for_round() -> void:
 		return
 	target_index = 0
 	scan_timer = 0.0
+	scanner_energy = max_scanner_energy
+	scanner_ready = true
+	cooldown_timer = 0.0
+	search_enabled = false
 	velocity = Vector3.ZERO
 	global_position = patrol_points[0].global_position
 	if navigation_agent:
 		navigation_agent.target_position = global_position
 
 func _physics_process(delta: float) -> void:
+	if not search_enabled:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		return
 	_patrol(delta)
 	scan_timer -= delta
+	if not scanner_ready:
+		cooldown_timer -= delta
+		if cooldown_timer <= 0.0:
+			scanner_ready = true
 	if scan_timer <= 0.0:
 		scan_timer = scan_interval
-		_scan_nearby_hiders()
+		if scanner_ready:
+			_scan_nearby_hiders()
 
 func _patrol(delta: float) -> void:
 	if patrol_points.is_empty():
@@ -69,6 +88,11 @@ func _patrol(delta: float) -> void:
 	look_at(Vector3(flat_target.x, global_position.y, flat_target.z), Vector3.UP)
 
 func _scan_nearby_hiders() -> void:
+	if scanner_energy <= 0.0:
+		return
+	scanner_ready = false
+	cooldown_timer = scan_cooldown
+	scanner_energy = maxf(scanner_energy - 6.0, 0.0)
 	for hider in hider_nodes:
 		if not is_instance_valid(hider) or not hider.has_method("is_hidden_alive") or not hider.is_hidden_alive():
 			continue
@@ -76,8 +100,15 @@ func _scan_nearby_hiders() -> void:
 		var camouflage: float = hider.get_camouflage_percent() if hider.has_method("get_camouflage_percent") else 50.0
 		if distance <= investigate_radius and camouflage < 92.0:
 			if _has_line_of_sight(hider):
+				scanner_energy = minf(scanner_energy + 8.0, max_scanner_energy)
 				bot_found_hider.emit(hider)
 				return
+
+func get_scanner_energy() -> float:
+	return scanner_energy
+
+func set_search_enabled(value: bool) -> void:
+	search_enabled = value
 
 func _has_line_of_sight(target: Node3D) -> bool:
 	var space_state := get_world_3d().direct_space_state

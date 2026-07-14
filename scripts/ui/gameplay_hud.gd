@@ -2,6 +2,7 @@ extends CanvasLayer
 
 const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 const PaintModeScene := preload("res://scenes/ui/paint_mode_ui.tscn")
+const PoseManagerScript := preload("res://scripts/characters/pose_manager.gd")
 
 var root: Control
 var role_label: Label
@@ -12,6 +13,12 @@ var part_label: Label
 var pose_label: Label
 var energy_label: Label
 var hiders_label: Label
+var counts_label: Label
+var username_label: Label
+var paint_status_label: Label
+var eyedropper_label: Label
+var brush_label: Label
+var shadow_label: Label
 var message_label: Label
 var mode_label: Label
 var pulse: ColorRect
@@ -21,6 +28,7 @@ var paint_ui: Control
 var _player: Node
 var _round_manager: Node
 var _mobile_controls: Control
+var _pose_menu: PanelContainer
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -30,18 +38,29 @@ func _ready() -> void:
 		settings.settings_changed.connect(_refresh_device_controls)
 	_refresh_device_controls()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pose_menu"):
+		_toggle_pose_menu()
+		get_viewport().set_input_as_handled()
+
 func bind_player(player: Node) -> void:
 	_player = player
 	if player.has_signal("role_changed") and not player.role_changed.is_connected(_on_role_changed):
 		player.role_changed.connect(_on_role_changed)
 	if player.has_signal("color_sampled") and not player.color_sampled.is_connected(_on_color_sampled):
 		player.color_sampled.connect(_on_color_sampled)
+	if player.has_signal("eyedropper_previewed") and not player.eyedropper_previewed.is_connected(_on_eyedropper_previewed):
+		player.eyedropper_previewed.connect(_on_eyedropper_previewed)
 	if player.has_signal("seeker_scanned") and not player.seeker_scanned.is_connected(_on_scan):
 		player.seeker_scanned.connect(_on_scan)
 	if player.has_signal("camouflage_changed") and not player.camouflage_changed.is_connected(_on_camouflage_changed):
 		player.camouflage_changed.connect(_on_camouflage_changed)
 	if player.has_signal("scanner_fired") and not player.scanner_fired.is_connected(_on_scanner_fired):
 		player.scanner_fired.connect(_on_scanner_fired)
+	if player.has_signal("taunt_requested") and not player.taunt_requested.is_connected(_on_taunt):
+		player.taunt_requested.connect(_on_taunt)
+	if player.has_signal("scanner_cooldown_changed") and not player.scanner_cooldown_changed.is_connected(_on_scanner_cooldown):
+		player.scanner_cooldown_changed.connect(_on_scanner_cooldown)
 	if paint_ui:
 		paint_ui.bind_player(player)
 	if player.get("is_hider") != null:
@@ -60,6 +79,8 @@ func bind_round_manager(round_manager: Node) -> void:
 		round_manager.round_finished.connect(callback)
 	if round_manager.has_signal("hider_count_changed") and not round_manager.hider_count_changed.is_connected(_on_hider_count_changed):
 		round_manager.hider_count_changed.connect(_on_hider_count_changed)
+	if round_manager.has_signal("role_counts_changed") and not round_manager.role_counts_changed.is_connected(_on_role_counts_changed):
+		round_manager.role_counts_changed.connect(_on_role_counts_changed)
 	if round_manager.has_signal("state_changed") and not round_manager.state_changed.is_connected(_on_round_state_changed):
 		round_manager.state_changed.connect(_on_round_state_changed)
 
@@ -93,6 +114,9 @@ func _build() -> void:
 	timer_label = _label("00:00", 28)
 	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	top_box.add_child(timer_label)
+	counts_label = _label("HIDERS 0   SEEKERS 0", 13)
+	counts_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top_box.add_child(counts_label)
 
 	var left := PanelContainer.new()
 	left.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -105,6 +129,11 @@ func _build() -> void:
 	var left_box := VBoxContainer.new()
 	left_box.add_theme_constant_override("separation", 4)
 	left.add_child(left_box)
+	var game_label := _label("MECCHA CHAMELEON", 14)
+	game_label.add_theme_color_override("font_color", Color(0.25, 0.92, 0.82))
+	left_box.add_child(game_label)
+	username_label = _label("Speler: Camouflage-speler", 13)
+	left_box.add_child(username_label)
 	role_label = _label("ROL: HIDER", 19)
 	left_box.add_child(role_label)
 	camo_label = _label("CAMOUFLAGE: 0%", 18)
@@ -117,6 +146,14 @@ func _build() -> void:
 	left_box.add_child(energy_label)
 	hiders_label = _label("HIDERS OVER: 0", 15)
 	left_box.add_child(hiders_label)
+	paint_status_label = _label("PAINT: gesloten", 12)
+	left_box.add_child(paint_status_label)
+	eyedropper_label = _label("PIPET: klaar", 12)
+	left_box.add_child(eyedropper_label)
+	brush_label = _label("BRUSH: 25%", 12)
+	left_box.add_child(brush_label)
+	shadow_label = _label("SCHADUW: aan", 12)
+	left_box.add_child(shadow_label)
 
 	message_label = _label("", 22)
 	message_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -153,7 +190,7 @@ func _build() -> void:
 	shortcuts.add_child(shortcuts_box)
 	var shortcut_title := _label("BESTURING", 15)
 	shortcuts_box.add_child(shortcut_title)
-	for action_name in ["move_forward", "sprint", "crouch", "pose_next", "paint_mode", "action"]:
+	for action_name in ["move_forward", "sprint", "crouch", "pose_next", "paint_mode", "pose_menu", "taunt", "pause", "toggle_rotation_lock", "toggle_name_labels", "toggle_xray"]:
 		shortcuts_box.add_child(_label("%s  %s" % [_action_label(action_name), _action_key(action_name)], 12))
 
 	mode_label = _label("INFECTION  •  Verstop, match je omgeving en blijf stil.", 14)
@@ -179,6 +216,7 @@ func _build() -> void:
 	paint_ui = PaintModeScene.instantiate()
 	paint_ui.name = "PaintModeUI"
 	root.add_child(paint_ui)
+	paint_ui.paint_mode_toggled.connect(_on_paint_mode_toggled)
 
 func _create_crosshair() -> void:
 	var crosshair := Control.new()
@@ -224,18 +262,23 @@ func _build_mobile_buttons() -> Control:
 	box.offset_bottom = -74
 	box.add_theme_constant_override("separation", 8)
 	root.add_child(box)
-	var pose := _mobile_button("Pose", func():
-		if _player and _player.has_method("_next_pose"):
-			_player._next_pose())
-	box.add_child(pose)
-	var paint := _mobile_button("Verf", func():
-		if paint_ui:
-			paint_ui.toggle())
-	box.add_child(paint)
-	var scan := _mobile_button("Scan", func():
-		if _player and _player.has_method("scan"):
-			_player.scan())
-	box.add_child(scan)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	box.add_child(grid)
+	grid.add_child(_mobile_button("Paint", func(): if paint_ui: paint_ui.toggle()))
+	grid.add_child(_mobile_button("Pose", _toggle_pose_menu))
+	var eyedropper := _mobile_button("Pipet", func(): pass)
+	eyedropper.button_down.connect(func(): if _player and _player.has_method("set_mobile_eyedropper"): _player.set_mobile_eyedropper(true))
+	eyedropper.button_up.connect(func(): if _player and _player.has_method("set_mobile_eyedropper"): _player.set_mobile_eyedropper(false))
+	grid.add_child(eyedropper)
+	grid.add_child(_mobile_button("Taunt", func(): if _player and _player.has_method("taunt"): _player.taunt()))
+	grid.add_child(_mobile_button("Spring", func(): if _player and _player.has_method("jump"): _player.jump()))
+	grid.add_child(_mobile_button("Hurk", func(): if _player and _player.has_method("set_mobile_crouching"): _player.set_mobile_crouching(not _player.mobile_crouching)))
+	grid.add_child(_mobile_button("Actie", func(): if _player and _player.has_method("interact"): _player.interact()))
+	grid.add_child(_mobile_button("Scan", func(): if _player and _player.has_method("scan"): _player.scan()))
+	grid.add_child(_mobile_button("Pauze", _toggle_pause))
 	return box
 
 func _mobile_button(text: String, callback: Callable) -> Button:
@@ -259,7 +302,13 @@ func _action_label(action: String) -> String:
 		"sprint": return "Sprint"
 		"crouch": return "Hurk"
 		"pose_next": return "Pose"
+		"pose_menu": return "Pose-menu"
 		"paint_mode": return "Paint"
+		"taunt": return "Taunt"
+		"pause": return "Pauze"
+		"toggle_rotation_lock": return "Rotatie"
+		"toggle_name_labels": return "Naamlabels"
+		"toggle_xray": return "X-ray DEBUG"
 		"action": return "Actie"
 		_: return action
 
@@ -275,6 +324,12 @@ func _on_role_changed(is_hider: bool) -> void:
 
 func _on_color_sampled(_color: Color) -> void:
 	show_message("Oppervlaktekleur gekopieerd")
+	if eyedropper_label:
+		eyedropper_label.text = "PIPET: kleur gevonden"
+
+func _on_eyedropper_previewed(_color: Color, valid: bool) -> void:
+	if eyedropper_label:
+		eyedropper_label.text = "PIPET: %s" % ("preview" if valid else "klaar")
 
 func _on_phase_changed(name: String, seconds_left: int) -> void:
 	phase_label.text = name.to_upper()
@@ -305,3 +360,49 @@ func _on_scanner_fired(hit: bool) -> void:
 
 func _on_hider_count_changed(remaining: int, total: int) -> void:
 	hiders_label.text = "HIDERS OVER: %d/%d" % [remaining, total]
+
+func _on_role_counts_changed(hiders: int, seekers: int) -> void:
+	counts_label.text = "HIDERS %d   SEEKERS %d" % [hiders, seekers]
+
+func _on_taunt() -> void:
+	show_message("Taunt geactiveerd")
+
+func _on_scanner_cooldown(ready: bool, seconds_left: float) -> void:
+	if ready:
+		energy_label.text = "ENERGIE: klaar"
+	else:
+		energy_label.text = "ENERGIE: cooldown %.1fs" % seconds_left
+
+func _on_paint_mode_toggled(open: bool) -> void:
+	paint_status_label.text = "PAINT: open" if open else "PAINT: gesloten"
+
+func _toggle_pause() -> void:
+	if _player:
+		var pause_menu := _player.get_parent().get_node_or_null("PauseMenu")
+		if pause_menu and pause_menu.has_method("toggle_pause"):
+			pause_menu.toggle_pause()
+
+func _toggle_pose_menu() -> void:
+	if _pose_menu and is_instance_valid(_pose_menu):
+		_pose_menu.visible = not _pose_menu.visible
+		return
+	_pose_menu = PanelContainer.new()
+	_pose_menu.name = "PoseMenu"
+	_pose_menu.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_pose_menu.offset_left = -360
+	_pose_menu.offset_top = -148
+	_pose_menu.offset_right = 360
+	_pose_menu.offset_bottom = -62
+	_pose_menu.add_theme_stylebox_override("panel", UI_STYLE.panel(Color(0.03, 0.05, 0.10, 0.95), Color(0.55, 0.25, 0.92, 0.90)))
+	root.add_child(_pose_menu)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 5)
+	_pose_menu.add_child(row)
+	for i in range(PoseManagerScript.POSE_NAMES.size()):
+		var pose_index := i
+		var button := _mobile_button(PoseManagerScript.POSE_NAMES[i], func():
+			if _player and _player.pose_manager:
+				_player.pose_manager.set_pose(pose_index)
+			_pose_menu.visible = false)
+		button.custom_minimum_size = Vector2(66, 54)
+		row.add_child(button)

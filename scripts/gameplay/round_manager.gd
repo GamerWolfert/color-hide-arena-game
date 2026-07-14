@@ -9,6 +9,7 @@ signal timer_changed(seconds_left: int)
 signal round_message(message: String)
 signal round_finished(winner: String)
 signal hider_count_changed(remaining: int, total: int)
+signal role_counts_changed(hiders: int, seekers: int)
 signal state_changed(state: RoundState)
 signal roles_assigned
 
@@ -19,6 +20,7 @@ signal roles_assigned
 @export var results_time := 6
 @export var restarting_time := 2
 @export_enum("Infection", "Classic") var round_mode := "Infection"
+@export var allow_shadow_toggle := true
 
 @onready var timer: Timer = $Timer
 @onready var player: CharacterBody3D = $"../Player"
@@ -45,11 +47,13 @@ func set_hiders(next_hiders: Array) -> void:
 	remaining_hiders = total_hiders
 	for hider in hiders:
 		if hider.has_signal("found") and not hider.found.is_connected(_on_hider_found):
-			hider.found.connect(_on_hider_found)
+				hider.found.connect(_on_hider_found)
 	hider_count_changed.emit(remaining_hiders, total_hiders)
+	_emit_role_counts()
 
 func set_seekers(next_seekers: Array) -> void:
 	seekers = next_seekers
+	_emit_role_counts()
 
 func start_round() -> void:
 	if not is_inside_tree():
@@ -59,6 +63,7 @@ func start_round() -> void:
 	_reset_players()
 	_refresh_hider_count()
 	hider_count_changed.emit(remaining_hiders, total_hiders)
+	_emit_role_counts()
 	_set_state(RoundState.WAITING, waiting_time, "Wachten op spelers")
 
 func restart_round() -> void:
@@ -81,6 +86,7 @@ func register_scan(found: bool, target: Node = null, _energy: float = 0.0) -> vo
 			target.mark_found()
 	_refresh_hider_count()
 	hider_count_changed.emit(remaining_hiders, total_hiders)
+	_emit_role_counts()
 	round_message.emit("Treffer bevestigd - %s" % ("besmet" if round_mode == "Infection" else "gevonden"))
 	if remaining_hiders <= 0:
 		_finish_round("SEEKER")
@@ -121,6 +127,9 @@ func _set_state(new_state: RoundState, duration: int, message: String) -> void:
 	if game_state:
 		game_state.set_state(_game_state_for_round_state())
 	state_changed.emit(state)
+	for seeker in seekers:
+		if is_instance_valid(seeker) and seeker.has_method("set_search_enabled"):
+			seeker.set_search_enabled(new_state == RoundState.SEARCHING)
 	phase_changed.emit(phase_name, seconds_left)
 	timer_changed.emit(seconds_left)
 	round_message.emit(message)
@@ -167,6 +176,8 @@ func _game_state_for_round_state() -> GameStateScript.State:
 func _assign_roles() -> void:
 	if player.has_method("set_hider"):
 		player.set_hider(true)
+	if player.has_method("set_shadow_policy"):
+		player.set_shadow_policy(allow_shadow_toggle)
 	if player.has_method("set_round_input_locked"):
 		player.set_round_input_locked(true)
 	roles_assigned.emit()
@@ -192,8 +203,15 @@ func _refresh_hider_count() -> void:
 		if is_instance_valid(hider) and hider.has_method("is_hidden_alive") and hider.is_hidden_alive():
 			remaining_hiders += 1
 
+func _emit_role_counts() -> void:
+	var seeker_count := get_tree().get_nodes_in_group("seekers").size()
+	if player and is_instance_valid(player) and not player.is_hider:
+		seeker_count += 1 if not player.is_in_group("seekers") else 0
+	role_counts_changed.emit(remaining_hiders, seeker_count)
+
 func _on_hider_found(_hider: Node) -> void:
 	_refresh_hider_count()
 	hider_count_changed.emit(remaining_hiders, total_hiders)
+	_emit_role_counts()
 	if state == RoundState.SEARCHING and remaining_hiders <= 0:
 		_finish_round("SEEKER")

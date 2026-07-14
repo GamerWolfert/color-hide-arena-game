@@ -3,7 +3,7 @@ extends Node
 const DEFAULT_ACTIONS := [
     "move_forward", "move_backward", "move_left", "move_right", "jump",
     "sprint", "crouch", "action", "pause", "toggle_role", "sample_color",
-    "paint_part", "next_body_part", "pose_next", "pose_previous", "paint_mode",
+    "paint_part", "next_body_part", "pose_next", "pose_previous", "pose_menu", "paint_mode",
     "eyedropper", "scanner_primary", "zoom_in", "zoom_out", "toggle_rotation_lock",
     "toggle_name_labels", "toggle_xray", "taunt"
 ]
@@ -23,6 +23,8 @@ func _ensure_actions() -> void:
         _add_key("pose_previous", 69)
     if InputMap.action_get_events("paint_mode").is_empty():
         _add_key("paint_mode", 70)
+    if InputMap.action_get_events("pose_menu").is_empty():
+        _add_key("pose_menu", 80)
     if InputMap.action_get_events("eyedropper").is_empty():
         _add_mouse("eyedropper", MOUSE_BUTTON_MIDDLE)
     if InputMap.action_get_events("scanner_primary").is_empty():
@@ -104,6 +106,7 @@ func reset_bindings() -> void:
     _add_key("next_body_part", 4194306)
     _add_key("pose_next", 81)
     _add_key("pose_previous", 69)
+    _add_key("pose_menu", 80)
     _add_key("paint_mode", 70)
     _add_mouse("eyedropper", MOUSE_BUTTON_MIDDLE)
     _add_mouse("scanner_primary", MOUSE_BUTTON_LEFT)

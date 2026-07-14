@@ -9,6 +9,9 @@ signal seeker_scanned(found: bool, target: Node, energy: float)
 signal camouflage_changed(percent: float, selected_part: String, pose_name: String)
 signal scanner_fired(hit: bool)
 signal pose_changed(pose_name: String)
+signal taunt_requested
+signal interaction_requested
+signal scanner_cooldown_changed(ready: bool, seconds_left: float)
 
 @export var walk_speed := 5.5
 @export var sprint_speed := 8.5
@@ -43,8 +46,12 @@ var last_surface_color := Color.WHITE
 var last_surface_distance := 99.0
 var last_frame_position := Vector3.ZERO
 var shadow_enabled := true
+var shadow_toggle_allowed := true
 var rotation_locked := false
 var pose_manager: Node
+var mobile_crouching := false
+var mobile_eyedropper := false
+var scanner_mesh: MeshInstance3D
 var _pitch := deg_to_rad(-12.0)
 var _standing_height := 1.8
 var _crouching_height := 1.1
@@ -62,6 +69,7 @@ func _ready() -> void:
 	add_child(pose_manager)
 	pose_manager.setup(body_parts)
 	pose_manager.pose_changed.connect(_on_pose_changed)
+	_build_scanner()
 	apply_color(Color(0.82, 0.84, 0.78))
 	_apply_camera_settings()
 	var settings = get_node_or_null("/root/SettingsService")
@@ -93,6 +101,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			paint_selected_part()
 		else:
 			scan()
+	elif event.is_action_pressed("taunt"):
+		taunt()
+	elif event.is_action_pressed("ui_accept"):
+		interaction_requested.emit()
 	elif event.is_action_pressed("scanner_primary") and not is_hider:
 		scan()
 	elif event.is_action_pressed("toggle_rotation_lock"):
@@ -104,7 +116,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_zoom(spring_arm.spring_length + 0.35)
 
 func _physics_process(delta: float) -> void:
-	if Input.is_action_pressed("eyedropper") and is_hider:
+	if (Input.is_action_pressed("eyedropper") or mobile_eyedropper) and is_hider:
 		_preview_surface_color()
 	if input_locked:
 		_slow_to_stop(delta)
@@ -113,7 +125,7 @@ func _physics_process(delta: float) -> void:
 
 	_handle_controller_look(delta)
 	_update_scanner(delta)
-	var crouching := Input.is_action_pressed("crouch")
+	var crouching := Input.is_action_pressed("crouch") or mobile_crouching
 	_apply_crouch(crouching, delta)
 
 	if is_on_floor():
@@ -153,16 +165,45 @@ func set_hider(value: bool) -> void:
 		apply_color(Color(0.82, 0.84, 0.78))
 	else:
 		apply_color(Color(0.95, 0.20, 0.20))
+	if scanner_mesh:
+		scanner_mesh.visible = not is_hider
 	role_changed.emit(is_hider)
+
+func jump() -> void:
+	if not input_locked and is_on_floor() and not (Input.is_action_pressed("crouch") or mobile_crouching):
+		velocity.y = jump_velocity
+
+func set_mobile_crouching(value: bool) -> void:
+	mobile_crouching = value
+
+func set_mobile_eyedropper(value: bool) -> void:
+	mobile_eyedropper = value
+	if not value:
+		eyedropper_previewed.emit(sampled_color, false)
+
+func interact() -> void:
+	interaction_requested.emit()
+	if is_hider:
+		sample_color()
+	else:
+		scan()
+
+func taunt() -> void:
+	taunt_requested.emit()
 
 func set_round_input_locked(value: bool) -> void:
 	input_locked = value
 
 func set_shadow_enabled(value: bool) -> void:
+	if not shadow_toggle_allowed:
+		return
 	shadow_enabled = value
 	for part in body_parts.values():
 		part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow_enabled else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	body_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow_enabled else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+func set_shadow_policy(allowed: bool) -> void:
+	shadow_toggle_allowed = allowed
 
 func sample_color() -> void:
 	var sample := _read_surface_sample()
@@ -214,6 +255,7 @@ func scan() -> void:
 		return
 	scanner_ready = false
 	_scan_timer = scan_cooldown
+	_animate_scanner()
 	ray.force_raycast_update()
 	var target: Node = ray.get_collider() if ray.is_colliding() else null
 	var found := false
@@ -225,6 +267,29 @@ func scan() -> void:
 		scanner_energy = min(scanner_energy + 4.0, max_scanner_energy)
 	scanner_fired.emit(found)
 	seeker_scanned.emit(found, target, scanner_energy)
+
+func _build_scanner() -> void:
+	scanner_mesh = MeshInstance3D.new()
+	scanner_mesh.name = "ScannerBlaster"
+	var box := BoxMesh.new()
+	box.size = Vector3(0.16, 0.16, 0.52)
+	scanner_mesh.mesh = box
+	scanner_mesh.position = Vector3(0.48, -0.34, -0.82)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.2, 0.9, 0.78)
+	material.emission_enabled = true
+	material.emission = Color(0.1, 0.45, 0.38)
+	scanner_mesh.material_override = material
+	scanner_mesh.visible = false
+	camera.add_child(scanner_mesh)
+
+func _animate_scanner() -> void:
+	if not scanner_mesh:
+		return
+	var start_position := Vector3(0.48, -0.34, -0.82)
+	var tween := create_tween()
+	tween.tween_property(scanner_mesh, "position", start_position + Vector3(0.0, 0.0, -0.18), 0.06)
+	tween.tween_property(scanner_mesh, "position", start_position, 0.14)
 
 func apply_color(color: Color) -> void:
 	var mat := StandardMaterial3D.new()
@@ -486,8 +551,14 @@ func _update_scanner(delta: float) -> void:
 		_scan_timer -= delta
 		if _scan_timer <= 0.0:
 			scanner_ready = true
+			_scanner_cooldown_changed(true, 0.0)
+		else:
+			_scanner_cooldown_changed(false, _scan_timer)
 	if not is_hider:
 		scanner_energy = min(scanner_energy + 4.0 * delta, max_scanner_energy)
 
 func _set_zoom(value: float) -> void:
 	spring_arm.spring_length = clampf(value, 2.0, 7.0)
+
+func _scanner_cooldown_changed(ready: bool, seconds_left: float) -> void:
+	scanner_cooldown_changed.emit(ready, seconds_left)

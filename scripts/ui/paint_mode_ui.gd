@@ -3,6 +3,8 @@ extends Control
 const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 const PaintModeManagerScript := preload("res://scripts/gameplay/paint_mode_manager.gd")
 
+signal paint_mode_toggled(open: bool)
+
 var player: Node
 var manager: Node
 var panel: PanelContainer
@@ -13,6 +15,7 @@ var new_swatch: ColorRect
 var rgb_label: Label
 var hsv_label: Label
 var hex_label: Label
+var hex_input: LineEdit
 var status_label: Label
 var brightness_slider: HSlider
 var saturation_slider: HSlider
@@ -47,6 +50,7 @@ func bind_player(next_player: Node) -> void:
 func toggle() -> void:
     _shown = not _shown
     visible = _shown
+    paint_mode_toggled.emit(_shown)
     mouse_filter = Control.MOUSE_FILTER_STOP if _shown else Control.MOUSE_FILTER_IGNORE
     if _shown:
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -110,9 +114,13 @@ func _build() -> void:
     rgb_label = Label.new()
     hsv_label = Label.new()
     hex_label = Label.new()
+    hex_input = LineEdit.new()
+    hex_input.placeholder_text = "HEX kleur, bijv. #2A8CFF"
+    hex_input.text_submitted.connect(_on_hex_submitted)
     outer.add_child(rgb_label)
     outer.add_child(hsv_label)
     outer.add_child(hex_label)
+    outer.add_child(hex_input)
 
     part_selector = OptionButton.new()
     part_selector.name = "BodyPartSelector"
@@ -190,6 +198,8 @@ func _button(text: String, callback: Callable) -> Button:
 
 func _on_picker_changed(color: Color) -> void:
     manager.set_color(color)
+    if hex_input:
+        hex_input.text = "#%s" % color.to_html(false)
 
 func _on_part_selected(index: int) -> void:
     manager.set_selected_part(part_selector.get_item_text(index))
@@ -212,6 +222,7 @@ func _on_paint_state_changed(color: Color, part_name: String, _metallic: float, 
         return
     picker.color = color
     new_swatch.color = color
+    hex_input.text = "#%s" % color.to_html(false)
     if player and player.has_method("get_body_part_color"):
         current_swatch.color = player.get_body_part_color(part_name)
     rgb_label.text = "RGB: %d, %d, %d" % [int(color.r * 255.0), int(color.g * 255.0), int(color.b * 255.0)]
@@ -222,3 +233,7 @@ func _on_paint_state_changed(color: Color, part_name: String, _metallic: float, 
 func _on_paint_applied(part_name: String, _color: Color) -> void:
     if status_label:
         status_label.text = "%s bijgewerkt" % part_name
+
+func _on_hex_submitted(value: String) -> void:
+    var parsed := Color.from_string(value.strip_edges(), manager.current_color)
+    manager.set_color(parsed)

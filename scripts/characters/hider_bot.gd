@@ -14,10 +14,26 @@ var hide_spot: Marker3D
 var body_parts := {}
 var pose_manager: Node
 var infected := false
+var alerted := false
 
 func _ready() -> void:
 	add_to_group("hiders")
 	_build_body()
+
+func _physics_process(_delta: float) -> void:
+	if not hidden_alive:
+		return
+	var nearest := 999.0
+	for seeker in get_tree().get_nodes_in_group("seekers"):
+		if is_instance_valid(seeker):
+			nearest = minf(nearest, global_position.distance_to(seeker.global_position))
+	if nearest < 4.5 and not alerted:
+		alerted = true
+		if pose_manager:
+			pose_manager.set_pose_by_name("Hurken")
+		camouflage_percent = maxf(camouflage_percent - 4.0, 0.0)
+	elif nearest > 6.0:
+		alerted = false
 
 func setup(spots: Array, index: int) -> void:
 	bot_id = index
@@ -63,6 +79,7 @@ func convert_to_seeker() -> void:
 func reset_for_round() -> void:
 	hidden_alive = true
 	infected = false
+	alerted = false
 	visible = true
 	remove_from_group("seekers")
 	add_to_group("hiders")

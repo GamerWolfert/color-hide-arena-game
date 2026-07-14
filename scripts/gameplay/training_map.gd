@@ -14,6 +14,7 @@ func get_spawn_points() -> Array:
 
 func _build_large_training_map() -> void:
 	_make_box("BaseFloor", Vector3(0, -0.2, 0), Vector3(58, 0.4, 42), Color(0.15, 0.18, 0.20))
+	_make_navigation_surface()
 	_make_zone("Garage", Vector3(-18, 0, -10), Vector3(16, 4, 14), Color(0.22, 0.42, 0.50))
 	_make_zone("Warehouse", Vector3(8, 0, -9), Vector3(20, 5, 16), Color(0.58, 0.26, 0.50))
 	_make_zone("Office", Vector3(-17, 0, 11), Vector3(15, 4, 12), Color(0.32, 0.62, 0.36))
@@ -34,6 +35,20 @@ func _build_large_training_map() -> void:
 	_make_props()
 	_make_height_features()
 	_make_markers()
+
+func _make_navigation_surface() -> void:
+	var region := NavigationRegion3D.new()
+	region.name = "TrainingNavigationRegion"
+	var navigation_mesh := NavigationMesh.new()
+	navigation_mesh.vertices = PackedVector3Array([
+		Vector3(-27.5, 0.02, -19.5),
+		Vector3(27.5, 0.02, -19.5),
+		Vector3(27.5, 0.02, 19.5),
+		Vector3(-27.5, 0.02, 19.5)
+	])
+	navigation_mesh.add_polygon(PackedInt32Array([0, 1, 2, 3]))
+	region.navigation_mesh = navigation_mesh
+	add_child(region)
 
 func _make_zone(zone_name: String, center: Vector3, size: Vector3, color: Color) -> void:
 	_make_box("%sFloor" % zone_name, center + Vector3(0, 0.02, 0), Vector3(size.x, 0.18, size.z), color.darkened(0.35))

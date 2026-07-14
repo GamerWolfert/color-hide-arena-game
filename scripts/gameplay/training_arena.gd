@@ -33,6 +33,7 @@ func _add_mobile_controls_if_needed() -> void:
 		return
 	var layer := CanvasLayer.new()
 	layer.name = "MobileControlsLayer"
+	layer.layer = 0
 	add_child(layer)
 	var controls := MobileControlsScript.new()
 	controls.name = "MobileControls"
