@@ -25,6 +25,8 @@ const CREDITS_SCENE := "res://scenes/menus/credits_menu.tscn"
 @onready var latest_role_label: Label = $SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent/LatestRole
 @onready var latest_result_label: Label = $SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent/LatestResult
 @onready var latest_xp_label: Label = $SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent/LatestXP
+@onready var news_panel: PanelContainer = $SafeArea/ContentLayout/RightColumn/NewsPanel
+@onready var news_button: Button = $SafeArea/ContentLayout/RightColumn/NewsPanel/NewsMargin/NewsContent/NewsButton
 @onready var logo_top: Label = $SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo/LogoTop
 @onready var logo_bottom: Label = $SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo/LogoBottom
 @onready var by_label: Label = $SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo/ByLabel
@@ -68,13 +70,15 @@ func _unhandled_input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
 
 func _style_static_controls() -> void:
-    left_menu.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.045, 0.085, 0.92), Color(0.12, 0.90, 0.82, 0.88)))
+    left_menu.add_theme_stylebox_override("panel", _panel_style(Color(0.015, 0.025, 0.055, 0.18), Color(0.12, 0.90, 0.82, 0.28), 8))
     right_profile_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.04, 0.035, 0.09, 0.88), Color(0.55, 0.27, 0.95, 0.86)))
     latest_session_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.045, 0.085, 0.92), Color(0.12, 0.68, 0.90, 0.82)))
+    news_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.045, 0.085, 0.92), Color(0.55, 0.25, 0.92, 0.82)))
+    news_button.add_theme_stylebox_override("normal", _menu_button_style(Color(0.04, 0.08, 0.13, 0.95), Color(0.96, 0.70, 0.16, 0.88), 1))
     bottom_info_bar.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.04, 0.075, 0.88), Color(0.12, 0.64, 0.72, 0.68), 6))
-    logo_top.add_theme_font_size_override("font_size", 42)
+    logo_top.add_theme_font_size_override("font_size", 58)
     logo_top.add_theme_color_override("font_color", Color(0.18, 0.96, 0.84))
-    logo_bottom.add_theme_font_size_override("font_size", 38)
+    logo_bottom.add_theme_font_size_override("font_size", 50)
     logo_bottom.add_theme_color_override("font_color", Color(0.72, 0.36, 0.96))
     by_label.add_theme_font_size_override("font_size", 14)
     by_label.add_theme_color_override("font_color", Color(1.0, 0.76, 0.24))
@@ -89,6 +93,10 @@ func _style_static_controls() -> void:
     latest_role_label.add_theme_color_override("font_color", Color(0.24, 0.92, 0.84))
     latest_result_label.add_theme_color_override("font_color", Color(0.98, 0.76, 0.22))
     latest_xp_label.add_theme_color_override("font_color", Color(0.76, 0.86, 0.96))
+    news_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+    for child in news_panel.get_node("NewsMargin/NewsContent").get_children():
+        if child is Label:
+            child.add_theme_color_override("font_color", Color(0.84, 0.91, 0.98))
     device_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     device_label.add_theme_color_override("font_color", Color(1.0, 0.76, 0.32))
     for child in $BottomInfoBar/BottomInfoContent.get_children():
@@ -97,18 +105,18 @@ func _style_static_controls() -> void:
             child.add_theme_color_override("font_color", Color(0.80, 0.88, 0.96))
 
 func _build_menu_buttons() -> void:
-    _add_menu_button("QuickPlayButton", "Snel spelen", "Matchmaking wordt later toegevoegd.", func(): _show_notice("Snel spelen wordt binnenkort toegevoegd."))
-    _add_menu_button("TrainingButton", "Training", "Oefen offline in de trainingsmap.", func(): _transition_to(TRAINING_SETUP_SCENE, false))
-    _add_menu_button("MultiplayerButton", "Multiplayer", "Bekijk de multiplayer-lobbybrowser.", func(): _transition_to(LOBBY_BROWSER_SCENE, false))
-    _add_menu_button("PrivateLobbyButton", "Private lobby", "Maak of join later een lobby met code.", func(): _transition_to(PRIVATE_LOBBY_SCENE, false))
-    _add_menu_button("ProfileButton", "Profiel", "Bekijk je lokale profielinformatie.", func(): _transition_to(PROFILE_SCENE, false))
-    _add_menu_button("CustomizationButton", "Aanpassingen", "Kies later skins en cosmetische items.", func(): _transition_to(CUSTOMIZATION_SCENE, false))
-    _add_menu_button("SettingsButton", "Instellingen", "Pas beeld, audio en besturing aan.", func(): _transition_to(SETTINGS_SCENE, false))
-    _add_menu_button("CreditsButton", "Credits", "Bekijk de makers en technologie.", func(): _transition_to(CREDITS_SCENE, false))
-    _add_menu_button("LogoutButton", "Uitloggen", "Meld dit apparaat af.", _logout)
+    _add_menu_button("QuickPlayButton", "▶  Snel spelen", "Matchmaking wordt later toegevoegd.", func(): _show_notice("Snel spelen wordt binnenkort toegevoegd."))
+    _add_menu_button("TrainingButton", "◎  Training", "Oefen offline in de trainingsmap.", func(): _transition_to(TRAINING_SETUP_SCENE, false))
+    _add_menu_button("MultiplayerButton", "♟  Multiplayer", "Bekijk de multiplayer-lobbybrowser.", func(): _transition_to(LOBBY_BROWSER_SCENE, false))
+    _add_menu_button("PrivateLobbyButton", "▣  Private lobby", "Maak of join later een lobby met code.", func(): _transition_to(PRIVATE_LOBBY_SCENE, false))
+    _add_menu_button("ProfileButton", "●  Profiel", "Bekijk je lokale profielinformatie.", func(): _transition_to(PROFILE_SCENE, false))
+    _add_menu_button("CustomizationButton", "◆  Aanpassingen", "Kies later skins en cosmetische items.", func(): _transition_to(CUSTOMIZATION_SCENE, false))
+    _add_menu_button("SettingsButton", "⚙  Instellingen", "Pas beeld, audio en besturing aan.", func(): _transition_to(SETTINGS_SCENE, false))
+    _add_menu_button("CreditsButton", "★  Credits", "Bekijk de makers en technologie.", func(): _transition_to(CREDITS_SCENE, false))
+    _add_menu_button("LogoutButton", "↪  Uitloggen", "Meld dit apparaat af.", _logout)
     var device := _device_service()
     if device == null or device.is_desktop():
-        _add_menu_button("QuitButton", "Stoppen", "Sluit Meccha Chameleon.", _quit_game)
+        _add_menu_button("QuitButton", "⏻  Stoppen", "Sluit Meccha Chameleon.", _quit_game)
     _wire_controller_navigation()
 
 func _add_menu_button(node_name: String, label_text: String, tooltip: String, callback: Callable) -> void:
@@ -117,10 +125,27 @@ func _add_menu_button(node_name: String, label_text: String, tooltip: String, ca
     button.text = label_text
     button.tooltip_text = tooltip
     button.focus_mode = Control.FOCUS_ALL
+    button.alignment = HORIZONTAL_ALIGNMENT_LEFT
     button.custom_minimum_size = Vector2(0.0, 42.0)
     button.add_theme_font_size_override("font_size", 18)
-    button.add_theme_color_override("font_color", Color(0.96, 0.98, 1.0))
-    button.add_theme_stylebox_override("normal", _menu_button_style(Color(0.025, 0.045, 0.085, 0.90), Color(0.12, 0.80, 0.78, 0.82), 1))
+    var normal_color := Color(0.025, 0.045, 0.085, 0.90)
+    var accent_color := Color(0.12, 0.80, 0.78, 0.82)
+    var text_color := Color(0.96, 0.98, 1.0)
+    match node_name:
+        "QuickPlayButton":
+            normal_color = Color(0.02, 0.18, 0.20, 0.94)
+            accent_color = Color(0.08, 0.96, 0.90, 1.0)
+            text_color = Color(0.34, 1.0, 0.94)
+        "LogoutButton":
+            normal_color = Color(0.16, 0.12, 0.035, 0.92)
+            accent_color = Color(1.0, 0.72, 0.12, 1.0)
+            text_color = Color(1.0, 0.80, 0.24)
+        "QuitButton":
+            normal_color = Color(0.16, 0.025, 0.07, 0.92)
+            accent_color = Color(1.0, 0.12, 0.34, 1.0)
+            text_color = Color(1.0, 0.28, 0.46)
+    button.add_theme_color_override("font_color", text_color)
+    button.add_theme_stylebox_override("normal", _menu_button_style(normal_color, accent_color, 1))
     button.add_theme_stylebox_override("hover", _menu_button_style(Color(0.10, 0.055, 0.19, 0.97), Color(0.68, 0.34, 0.98, 0.98), 2))
     button.add_theme_stylebox_override("focus", _menu_button_style(Color(0.08, 0.06, 0.16, 0.98), Color(0.68, 0.34, 0.98, 1.0), 2, 10))
     button.add_theme_stylebox_override("pressed", _menu_button_style(Color(0.16, 0.13, 0.08, 1.0), Color(1.0, 0.76, 0.20, 1.0), 2))
@@ -202,12 +227,12 @@ func _configure_layout() -> void:
         safe_area.offset_top = 28.0
         safe_area.offset_right = -34.0
         safe_area.offset_bottom = -78.0
-        left_menu.custom_minimum_size = Vector2(410.0, 0.0)
+        left_menu.custom_minimum_size = Vector2(430.0, 0.0)
         left_menu.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
         right_column.visible = true
         button_scroll.custom_minimum_size = Vector2(0.0, 280.0)
-        logo_top.add_theme_font_size_override("font_size", 42)
-        logo_bottom.add_theme_font_size_override("font_size", 38)
+        logo_top.add_theme_font_size_override("font_size", 58)
+        logo_bottom.add_theme_font_size_override("font_size", 50)
     for button in _menu_buttons:
         button.custom_minimum_size = Vector2(0.0, 54.0 if compact else 42.0)
         button.add_theme_font_size_override("font_size", 19 if compact else 18)
@@ -316,6 +341,8 @@ func _menu_button_style(background: Color, border: Color, border_width: int, sha
     style.corner_radius_bottom_right = 7
     style.content_margin_left = 16.0
     style.content_margin_right = 16.0
+    style.content_margin_top = 9.0
+    style.content_margin_bottom = 9.0
     style.shadow_color = Color(border.r, border.g, border.b, 0.34)
     style.shadow_size = shadow_size
     return style

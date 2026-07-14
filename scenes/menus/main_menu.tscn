@@ -37,7 +37,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.01, 0.018, 0.05, 0.35)
+color = Color(0.01, 0.018, 0.05, 0.04)
 
 [node name="SafeArea" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -56,7 +56,7 @@ layout_mode = 2
 theme_override_constants/separation = 26
 
 [node name="LeftMenu" type="PanelContainer" parent="SafeArea/ContentLayout"]
-custom_minimum_size = Vector2(410, 0)
+custom_minimum_size = Vector2(430, 0)
 layout_mode = 2
 
 [node name="MenuMargin" type="MarginContainer" parent="SafeArea/ContentLayout/LeftMenu"]
@@ -109,11 +109,11 @@ mouse_filter = 2
 [node name="RightColumn" type="VBoxContainer" parent="SafeArea/ContentLayout"]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_vertical = 0
 theme_override_constants/separation = 16
 
 [node name="RightProfilePanel" type="PanelContainer" parent="SafeArea/ContentLayout/RightColumn"]
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(300, 236)
 layout_mode = 2
 
 [node name="ProfileMargin" type="MarginContainer" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel"]
@@ -144,7 +144,7 @@ layout_mode = 2
 text = "Apparaat wordt gedetecteerd..."
 
 [node name="LatestSessionPanel" type="PanelContainer" parent="SafeArea/ContentLayout/RightColumn"]
-custom_minimum_size = Vector2(300, 220)
+custom_minimum_size = Vector2(300, 158)
 layout_mode = 2
 
 [node name="LatestMargin" type="MarginContainer" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel"]
@@ -178,6 +178,36 @@ text = "Resultaat\n-"
 [node name="LatestXP" type="Label" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent"]
 layout_mode = 2
 text = "XP verdiend\n-"
+
+[node name="NewsPanel" type="PanelContainer" parent="SafeArea/ContentLayout/RightColumn"]
+custom_minimum_size = Vector2(300, 138)
+layout_mode = 2
+
+[node name="NewsMargin" type="MarginContainer" parent="SafeArea/ContentLayout/RightColumn/NewsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="NewsContent" type="VBoxContainer" parent="SafeArea/ContentLayout/RightColumn/NewsPanel/NewsMargin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="NewsHeading" type="Label" parent="SafeArea/ContentLayout/RightColumn/NewsPanel/NewsMargin/NewsContent"]
+layout_mode = 2
+text = "NIEUWS"
+theme_override_font_sizes/font_size = 18
+
+[node name="NewsText" type="Label" parent="SafeArea/ContentLayout/RightColumn/NewsPanel/NewsMargin/NewsContent"]
+layout_mode = 2
+text = "Nieuwe kleurrijke trainingszone beschikbaar."
+autowrap_mode = 2
+
+[node name="NewsButton" type="Button" parent="SafeArea/ContentLayout/RightColumn/NewsPanel/NewsMargin/NewsContent"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+text = "BEKIJK NU"
 
 [node name="BottomInfoBar" type="PanelContainer" parent="."]
 layout_mode = 1

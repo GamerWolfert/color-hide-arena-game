@@ -27,7 +27,7 @@ func _process(delta: float) -> void:
 	_animate_character()
 	_animate_camera()
 	if _key_light:
-		_key_light.light_energy = 3.0 + sin(_elapsed * 0.7) * 0.18
+		_key_light.light_energy = 3.8 + sin(_elapsed * 0.7) * 0.22
 
 func _create_environment() -> void:
 	var environment := Environment.new()
@@ -35,7 +35,7 @@ func _create_environment() -> void:
 	environment.background_color = Color(0.008, 0.012, 0.026)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(0.20, 0.28, 0.46)
-	environment.ambient_light_energy = 0.55
+	environment.ambient_light_energy = 0.78
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.fog_enabled = true
 	environment.fog_light_color = Color(0.12, 0.16, 0.28)
@@ -67,7 +67,7 @@ func _create_wall_logo() -> void:
 	var top := Label3D.new()
 	top.name = "MecchaWallLogo"
 	top.text = "MECCHA"
-	top.font_size = 82
+	top.font_size = 112
 	top.outline_size = 8
 	top.modulate = Color(0.18, 0.94, 0.82)
 	top.outline_modulate = Color(0.02, 0.04, 0.08)
@@ -77,7 +77,7 @@ func _create_wall_logo() -> void:
 	var bottom := Label3D.new()
 	bottom.name = "ChameleonWallLogo"
 	bottom.text = "CHAMELEON"
-	bottom.font_size = 55
+	bottom.font_size = 76
 	bottom.outline_size = 7
 	bottom.modulate = Color(0.73, 0.35, 0.96)
 	bottom.outline_modulate = Color(0.18, 0.08, 0.28)
@@ -115,7 +115,8 @@ func _create_camo_object(position_value: Vector3, material: StandardMaterial3D) 
 func _create_character() -> void:
 	_character = Node3D.new()
 	_character.name = "MecchaChameleonCharacter"
-	_character.position = Vector3(3.45, 0.42, -1.35)
+	_character.position = Vector3(3.80, 0.42, -1.35)
+	_character.scale = Vector3(1.30, 1.30, 1.30)
 	add_child(_character)
 	var body_material := _material(Color(0.82, 0.88, 0.86), 0.10, 0.58)
 	var head_material := _material(Color(0.94, 0.96, 0.92), 0.06, 0.62)
@@ -141,11 +142,11 @@ func _create_lights() -> void:
 func _create_camera() -> void:
 	_camera = Camera3D.new()
 	_camera.name = "MenuCamera"
-	_camera.position = Vector3(0.15, 3.0, 10.0)
-	_camera.fov = 58.0
+	_camera.position = Vector3(0.15, 2.9, 8.6)
+	_camera.fov = 54.0
 	_camera.current = true
 	add_child(_camera)
-	_camera.look_at(Vector3(0.8, 1.7, -2.4), Vector3.UP)
+	_camera.look_at(Vector3(1.35, 1.85, -2.35), Vector3.UP)
 
 func _animate_character() -> void:
 	if _character == null or _left_arm == null or _right_arm == null:
@@ -164,8 +165,8 @@ func _animate_character() -> void:
 func _animate_camera() -> void:
 	if _camera == null:
 		return
-	_camera.position = Vector3(0.15 + sin(_elapsed * 0.17) * 0.18, 3.0 + sin(_elapsed * 0.23) * 0.06, 10.0 + cos(_elapsed * 0.19) * 0.12)
-	_camera.look_at(Vector3(0.8 + sin(_elapsed * 0.15) * 0.14, 1.7, -2.4), Vector3.UP)
+	_camera.position = Vector3(0.15 + sin(_elapsed * 0.17) * 0.18, 2.9 + sin(_elapsed * 0.23) * 0.06, 8.6 + cos(_elapsed * 0.19) * 0.12)
+	_camera.look_at(Vector3(1.35 + sin(_elapsed * 0.15) * 0.14, 1.85, -2.35), Vector3.UP)
 
 func _spot_light(name_value: String, position_value: Vector3, target: Vector3, color: Color, energy: float, light_range: float) -> SpotLight3D:
 	var light := SpotLight3D.new()
