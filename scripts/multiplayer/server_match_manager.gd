@@ -93,18 +93,22 @@ func send_hello() -> void:
 	if network and not network.is_server:
 		var session := get_node_or_null("/root/SessionManager")
 		var display_name := "Player"
+		var user_id := ""
 		if session and not session.display_name.is_empty():
 			display_name = session.display_name
-		client_hello.rpc_id(1, display_name)
+		if session:
+			user_id = session.user_id
+		client_hello.rpc_id(1, display_name, user_id)
 
 @rpc("any_peer", "call_remote", "reliable")
-func client_hello(display_name: String) -> void:
+func client_hello(display_name: String, user_id: String) -> void:
 	if not authoritative:
 		return
 	var sender := multiplayer.get_remote_sender_id()
 	register_peer(sender)
 	var state: Dictionary = players.get(sender, {})
 	state["display_name"] = display_name.left(24)
+	state["user_id"] = user_id if _is_uuid(user_id) else ""
 	players[sender] = state
 	_send_snapshot_to(sender)
 
@@ -231,6 +235,24 @@ func _finish_round(winner: String) -> void:
 			state["score"] = int(state["score"]) + 275
 		players[peer_id] = state
 		score_changed.emit(int(peer_id), int(state["score"]))
+	var stats_service := get_node_or_null("/root/StatsService")
+	if stats_service and stats_service.has_method("submit_verified_match"):
+		stats_service.submit_verified_match(_verified_stats_payload(winner))
+
+func _verified_stats_payload(winner: String) -> Dictionary:
+	var verified_players: Array = []
+	for state in players.values():
+		var user_id := str(state.get("user_id", ""))
+		if not _is_uuid(user_id):
+			continue
+		var role := str(state.get("role", "HIDER"))
+		verified_players.append({
+			"user_id": user_id,
+			"role": role,
+			"won": role == winner,
+			"xp": 275 if role == winner else 90
+		})
+	return {"round_id": round_number, "mode": "Infection", "winner": winner, "players": verified_players}
 
 func _server_apply_input(peer_id: int, payload: Dictionary) -> void:
 	var state: Dictionary = players[peer_id]
@@ -447,3 +469,8 @@ func _sanitize_colors(value: Variant) -> Dictionary:
 
 func _valid_pose(value: Variant) -> int:
 	return clampi(int(value), 0, 8)
+
+func _is_uuid(value: String) -> bool:
+	var regex := RegEx.new()
+	regex.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
+	return regex.search(value) != null

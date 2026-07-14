@@ -56,9 +56,18 @@ func _ready() -> void:
         cursor.set_mode(cursor.CursorMode.UI)
     UI_STYLE.apply_theme(self)
     _style_static_controls()
-    _build_menu_buttons()
-    _update_profile()
-    _configure_layout()
+	_build_menu_buttons()
+	_update_profile()
+	var profile_service := get_node_or_null("/root/ProfileService")
+	if profile_service:
+		if not profile_service.profile_loaded.is_connected(_on_cloud_profile_loaded):
+			profile_service.profile_loaded.connect(_on_cloud_profile_loaded)
+		profile_service.load_profile()
+	var stats_service := get_node_or_null("/root/StatsService")
+	if stats_service and not stats_service.stats_loaded.is_connected(_on_cloud_stats_loaded):
+		stats_service.stats_loaded.connect(_on_cloud_stats_loaded)
+		stats_service.load_stats()
+	_configure_layout()
     get_viewport().size_changed.connect(_configure_layout)
     call_deferred("_grab_initial_focus")
     _fade_in()
@@ -196,7 +205,24 @@ func _update_profile() -> void:
     profile_stats_label.text = "Level 1\nXP %d / 7500\nStatus Online\nSkin Neutraal\nLaatste modus %s" % [last_xp, last_mode]
     _update_latest_session(last_session)
     var device := _device_service()
-    device_label.text = "Apparaat: %s" % (device.get_summary() if device else "Onbekend")
+	device_label.text = "Apparaat: %s" % (device.get_summary() if device else "Onbekend")
+
+func _on_cloud_profile_loaded(profile: Dictionary) -> void:
+	var level := int(profile.get("level", 1))
+	var xp := int(profile.get("xp", 0))
+	var skin := str(profile.get("selected_skin", "neutral"))
+	profile_stats_label.text = "Level %d\nXP %d\nStatus Online\nSkin %s\nLaatste modus %s" % [level, xp, skin, _last_session_mode()]
+
+func _on_cloud_stats_loaded(stats: Dictionary) -> void:
+	var level_text := profile_stats_label.text
+	if level_text.is_empty():
+		level_text = "Level 1"
+	profile_stats_label.text = "%s\nRondes %d  Wins %d" % [level_text, int(stats.get("rounds", 0)), int(stats.get("wins", 0))]
+
+func _last_session_mode() -> String:
+	var history := get_node_or_null("/root/SessionHistoryService")
+	var last_session: Dictionary = history.get_last_session() if history else {}
+	return str(last_session.get("mode", "Nog geen sessie"))
 
 func _update_latest_session(last_session: Dictionary) -> void:
     if last_session.is_empty():

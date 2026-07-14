@@ -24,6 +24,7 @@ func set_session(data: Dictionary) -> bool:
 		_clear_memory()
 		return false
 	save_session()
+	call_deferred("_load_cloud_services")
 	return true
 
 func save_session() -> void:
@@ -61,6 +62,8 @@ func load_session() -> void:
 		display_name = str(data.get("display_name", ""))
 		if not is_logged_in():
 			logout()
+		else:
+			call_deferred("_load_cloud_services")
 
 func logout() -> void:
 	_clear_memory()
@@ -74,6 +77,21 @@ func _clear_memory() -> void:
 	user_id = ""
 	email = ""
 	display_name = ""
+
+func _load_cloud_services() -> void:
+	var profile_service := get_node_or_null("/root/ProfileService")
+	if profile_service:
+		profile_service.load_profile()
+	var save_service := get_node_or_null("/root/SaveService")
+	if save_service:
+		save_service.load_cloud_save()
+	var stats_service := get_node_or_null("/root/StatsService")
+	if stats_service:
+		stats_service.load_stats()
+	var friends_service := get_node_or_null("/root/FriendsService")
+	if friends_service:
+		friends_service.load_friends()
+		friends_service.load_recent_players()
 
 func _is_access_token_current() -> bool:
 	var parts := access_token.split(".")

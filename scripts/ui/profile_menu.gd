@@ -2,6 +2,8 @@ extends Control
 
 const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 
+var cloud_summary_label: Label
+
 func _ready() -> void:
 	if not _is_logged_in():
 		call_deferred("_go_to_login")
@@ -50,6 +52,13 @@ func _build() -> void:
 	details.add_child(user_label)
 	details.add_child(_detail("E-mailadres", email))
 	details.add_child(_detail("Platform", _device_summary()))
+	cloud_summary_label = _detail("Cloudprofiel", "Laden...")
+	details.add_child(cloud_summary_label)
+	var profile_service := get_node_or_null("/root/ProfileService")
+	if profile_service:
+		if not profile_service.profile_loaded.is_connected(_on_profile_loaded):
+			profile_service.profile_loaded.connect(_on_profile_loaded)
+		profile_service.load_profile()
 
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 12)
@@ -101,3 +110,7 @@ func _scene_manager() -> Node:
 func _device_summary() -> String:
 	var device := get_node_or_null("/root/DeviceService")
 	return device.get_summary() if device else "Onbekend apparaat"
+
+func _on_profile_loaded(profile: Dictionary) -> void:
+	if cloud_summary_label:
+		cloud_summary_label.text = "Cloudprofiel: Level %d  XP %d  Skin %s" % [int(profile.get("level", 1)), int(profile.get("xp", 0)), str(profile.get("selected_skin", "neutral"))]

@@ -196,6 +196,39 @@ func restore_defaults() -> void:
     apply_settings()
     save_settings()
 
+func to_dictionary() -> Dictionary:
+    return {
+        "resolution": [resolution.x, resolution.y],
+        "window_mode": window_mode,
+        "vsync_enabled": vsync_enabled,
+        "graphics_quality": graphics_quality,
+        "render_scale": render_scale,
+        "shadows_enabled": shadows_enabled,
+        "anti_aliasing": anti_aliasing,
+        "mouse_sensitivity": mouse_sensitivity,
+        "controller_sensitivity": controller_sensitivity,
+        "mobile_camera_sensitivity": mobile_camera_sensitivity,
+        "invert_y": invert_y,
+        "master_volume": master_volume,
+        "music_volume": music_volume,
+        "effects_volume": effects_volume,
+        "voice_chat_enabled": voice_chat_enabled,
+        "joystick_size": joystick_size,
+        "touch_button_opacity": touch_button_opacity,
+        "touch_controls_position": touch_controls_position,
+        "vibration_enabled": vibration_enabled,
+        "aim_assist_enabled": aim_assist_enabled,
+        "force_mobile_ui_on_desktop": force_mobile_ui_on_desktop
+    }
+
+func apply_dictionary(values: Dictionary) -> void:
+    for key in values.keys():
+        var value = values[key]
+        if key == "resolution" and value is Array and value.size() == 2:
+            value = Vector2i(int(value[0]), int(value[1]))
+        set_value(str(key), value, false)
+    save_settings()
+
 func set_keybind(action: String, event: InputEvent) -> void:
     if not InputMap.has_action(action):
         InputMap.add_action(action)
