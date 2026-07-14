@@ -35,6 +35,7 @@ signal scanner_cooldown_changed(ready: bool, seconds_left: float)
 
 var is_hider := true
 var input_locked := false
+var menu_input_locked := false
 var scanner_energy := 100.0
 var scanner_ready := true
 var sampled_color := Color.WHITE
@@ -75,14 +76,14 @@ func _ready() -> void:
 		pose_manager.setup(body_parts)
 	pose_manager.pose_changed.connect(_on_pose_changed)
 	_build_scanner()
-	apply_color(Color(0.82, 0.84, 0.78))
+	apply_color(Color(0.94, 0.91, 0.82))
 	_apply_camera_settings()
 	var settings = get_node_or_null("/root/SettingsService")
 	if settings:
 		settings.settings_changed.connect(_apply_camera_settings)
 
 func _input(event: InputEvent) -> void:
-	if input_locked or rotation_locked:
+	if input_locked or menu_input_locked or rotation_locked:
 		return
 	if not event is InputEventMouseMotion or Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
 		return
@@ -94,7 +95,7 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if input_locked:
+	if input_locked or menu_input_locked:
 		return
 	if event is InputEventMouseButton and event.pressed and Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
 		var pause_menu := get_node_or_null("../PauseMenu")
@@ -137,7 +138,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if (Input.is_action_pressed("eyedropper") or mobile_eyedropper) and is_hider:
 		_preview_surface_color()
-	if input_locked:
+	if input_locked or menu_input_locked:
 		_slow_to_stop(delta)
 		move_and_slide()
 		return
@@ -166,6 +167,7 @@ func _physics_process(delta: float) -> void:
 	var target_velocity := direction * target_speed
 	velocity.x = move_toward(velocity.x, target_velocity.x, rate * control * delta)
 	velocity.z = move_toward(velocity.z, target_velocity.z, rate * control * delta)
+	_update_character_presentation(direction, crouching)
 
 	move_and_slide()
 	_update_camouflage()
@@ -174,15 +176,19 @@ func _physics_process(delta: float) -> void:
 func reset_to_spawn(spawn_transform: Transform3D, hider: bool) -> void:
 	global_transform = spawn_transform
 	velocity = Vector3.ZERO
+	yaw_root.rotation = Vector3.ZERO
+	pitch_root.rotation.x = _pitch
+	character_visual.rotation.y = 0.0
 	set_hider(hider)
 	input_locked = false
+	menu_input_locked = false
 
 func set_hider(value: bool) -> void:
 	is_hider = value
 	hidden_alive = value
 	scanner_energy = max_scanner_energy
 	if is_hider:
-		apply_color(Color(0.82, 0.84, 0.78))
+		apply_color(Color(0.94, 0.91, 0.82))
 	else:
 		apply_color(Color(0.95, 0.20, 0.20))
 	if scanner_mesh:
@@ -229,6 +235,12 @@ func taunt() -> void:
 
 func set_round_input_locked(value: bool) -> void:
 	input_locked = value
+
+func set_menu_input_locked(value: bool) -> void:
+	menu_input_locked = value
+	if value:
+		velocity.x = 0.0
+		velocity.z = 0.0
 
 func set_shadow_enabled(value: bool) -> void:
 	if not shadow_toggle_allowed:
@@ -347,11 +359,14 @@ func paint_selected_part(color: Color = Color(-1, -1, -1, -1)) -> void:
 func set_body_part_style(part_name: String, color: Color, metallic := 0.0, roughness := 0.78) -> void:
 	if not body_parts.has(part_name):
 		return
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.metallic = clampf(metallic, 0.0, 1.0)
-	mat.roughness = clampf(roughness, 0.05, 1.0)
-	body_parts[part_name].material_override = mat
+	if character_visual.has_method("set_body_part_style"):
+		character_visual.set_body_part_style(part_name, color, metallic, roughness)
+	else:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = color
+		mat.metallic = clampf(metallic, 0.0, 1.0)
+		mat.roughness = clampf(roughness, 0.05, 1.0)
+		body_parts[part_name].material_override = mat
 	_update_camouflage()
 
 func get_body_part_color(part_name: String) -> Color:
@@ -459,8 +474,6 @@ func _set_cursor_mode(mode: int) -> void:
 	var cursor := get_node_or_null("/root/CursorManager")
 	if cursor:
 		cursor.set_mode(mode)
-	else:
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _set_part_color(part_name: String, color: Color) -> void:
 	if not body_parts.has(part_name):
@@ -476,10 +489,9 @@ func _select_next_part() -> void:
 	_update_camouflage()
 
 func _highlight_selected_part() -> void:
-	for i in range(_part_names.size()):
-		var part: MeshInstance3D = body_parts.get(_part_names[i])
-		if part:
-			part.scale = Vector3.ONE * (1.08 if i == selected_part_index else 1.0)
+	# Selection is communicated through the compact HUD. Scaling paint zones would
+	# break the seamless silhouette and expose joints.
+	pass
 
 func _next_pose() -> void:
 	_set_pose(pose_index + 1)
@@ -497,8 +509,27 @@ func _set_pose(index: int) -> void:
 
 func _on_pose_changed(index: int, pose_name: String) -> void:
 	pose_index = index
+	if character_visual.has_method("play_pose_animation"):
+		character_visual.play_pose_animation(index)
 	pose_changed.emit(pose_name)
 	_update_camouflage()
+
+func _update_character_presentation(direction: Vector3, crouching: bool) -> void:
+	if direction.length_squared() > 0.01 and not rotation_locked:
+		var target_yaw := atan2(-direction.x, -direction.z)
+		character_visual.rotation.y = lerp_angle(character_visual.rotation.y, target_yaw, 0.18)
+	if not character_visual.has_method("play_animation") or pose_index != 0:
+		return
+	if not is_on_floor():
+		character_visual.play_animation("Jump")
+	elif crouching:
+		character_visual.play_animation("Crouch")
+	elif direction.length_squared() < 0.01:
+		character_visual.play_animation("Idle")
+	elif Input.is_action_pressed("sprint"):
+		character_visual.play_animation("Run")
+	else:
+		character_visual.play_animation("Walk")
 
 func _apply_pose() -> void:
 	if pose_manager:

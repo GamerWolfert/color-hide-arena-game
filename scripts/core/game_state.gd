@@ -47,8 +47,6 @@ func go_to_main_menu() -> void:
 	var cursor := get_node_or_null("/root/CursorManager")
 	if cursor:
 		cursor.set_mode(cursor.CursorMode.UI)
-	else:
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	var scene_manager := get_node_or_null("/root/SceneManager")
 	if scene_manager:
 		scene_manager.change_scene(MAIN_MENU_SCENE, false)

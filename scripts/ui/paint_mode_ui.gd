@@ -8,7 +8,7 @@ signal paint_mode_toggled(open: bool)
 var player: Node
 var manager: Node
 var panel: PanelContainer
-var picker: ColorPickerButton
+var picker: ColorPicker
 var part_selector: OptionButton
 var current_swatch: ColorRect
 var new_swatch: ColorRect
@@ -56,16 +56,19 @@ func toggle() -> void:
     if _shown:
         if cursor:
             cursor.set_mode(cursor.CursorMode.PAINT)
-        else:
-            Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
         var input_service := get_node_or_null("/root/InputService")
         if input_service:
             input_service.set_touch_input_blocked(true)
+        if player and player.has_method("set_menu_input_locked"):
+            player.set_menu_input_locked(true)
     else:
         var input_service := get_node_or_null("/root/InputService")
         if input_service:
             input_service.set_touch_input_blocked(false)
-        Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+        if player and player.has_method("set_menu_input_locked"):
+            player.set_menu_input_locked(false)
+        if cursor:
+            cursor.set_mode(cursor.CursorMode.GAMEPLAY)
 
 func close() -> void:
     if _shown:
@@ -80,17 +83,23 @@ func _unhandled_input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
 
 func _build() -> void:
+    var dim := ColorRect.new()
+    dim.name = "PaintDim"
+    dim.color = Color(0.005, 0.01, 0.025, 0.58)
+    dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+    dim.mouse_filter = Control.MOUSE_FILTER_STOP
+    add_child(dim)
     panel = PanelContainer.new()
     panel.set_anchors_preset(Control.PRESET_CENTER)
     panel.offset_left = -250
-    panel.offset_top = -330
+    panel.offset_top = -312
     panel.offset_right = 250
-    panel.offset_bottom = 330
+    panel.offset_bottom = 312
     panel.mouse_filter = Control.MOUSE_FILTER_STOP
     panel.add_theme_stylebox_override("panel", UI_STYLE.panel(Color(0.025, 0.045, 0.09, 0.97), Color(0.18, 0.86, 0.82, 0.95)))
     add_child(panel)
     var outer := VBoxContainer.new()
-    outer.add_theme_constant_override("separation", 5)
+    outer.add_theme_constant_override("separation", 3)
     panel.add_child(outer)
     var title := Label.new()
     title.text = "PAINT MODE"
@@ -104,8 +113,14 @@ func _build() -> void:
 
     var color_row := HBoxContainer.new()
     outer.add_child(color_row)
-    picker = ColorPickerButton.new()
-    picker.custom_minimum_size = Vector2(92, 54)
+    picker = ColorPicker.new()
+    picker.custom_minimum_size = Vector2(238, 205)
+    picker.picker_shape = ColorPicker.SHAPE_HSV_WHEEL
+    picker.color_modes_visible = false
+    picker.sliders_visible = false
+    picker.hex_visible = false
+    picker.presets_visible = false
+    picker.sampler_visible = false
     picker.color = Color.WHITE
     picker.color_changed.connect(_on_picker_changed)
     color_row.add_child(picker)
@@ -153,17 +168,12 @@ func _build() -> void:
     outer.add_child(actions)
     var eyedropper := _button("Pipet", _use_eyedropper)
     var apply := _button("Toepassen", func(): manager.apply())
-    var close_button := _button("Sluiten", close)
+    var close_button := _button("Annuleren", close)
     actions.add_child(eyedropper)
     actions.add_child(apply)
     actions.add_child(close_button)
-    var shadow := CheckButton.new()
-    shadow.text = "Schaduw aan"
-    shadow.button_pressed = true
-    shadow.toggled.connect(func(value): manager.set_shadow_enabled(value))
-    outer.add_child(shadow)
     status_label = Label.new()
-    status_label.text = "F openen/sluiten  •  Esc sluiten"
+    status_label.text = "F openen/sluiten  |  Esc sluiten"
     status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     outer.add_child(status_label)
 
@@ -190,7 +200,7 @@ func _slider(label_text: String, minimum: float, maximum: float, value: float) -
     slider.max_value = maximum
     slider.value = value
     slider.tooltip_text = label_text
-    slider.custom_minimum_size = Vector2(350, 20)
+    slider.custom_minimum_size = Vector2(350, 17)
     return slider
 
 func _button(text: String, callback: Callable) -> Button:
@@ -220,7 +230,7 @@ func _on_eyedropper_previewed(color: Color, valid: bool) -> void:
     if valid:
         manager.set_color(color)
         if status_label:
-            status_label.text = "Oppervlak gevonden  •  klik Toepassen"
+            status_label.text = "Oppervlak gevonden  |  klik Toepassen"
 
 func _on_paint_state_changed(color: Color, part_name: String, _metallic: float, _roughness: float) -> void:
     if not picker:
@@ -232,8 +242,8 @@ func _on_paint_state_changed(color: Color, part_name: String, _metallic: float, 
         current_swatch.color = player.get_body_part_color(part_name)
     rgb_label.text = "RGB: %d, %d, %d" % [int(color.r * 255.0), int(color.g * 255.0), int(color.b * 255.0)]
     var hsv := Vector3(color.h, color.s, color.v)
-    hsv_label.text = "HSV: %d°, %d%%, %d%%" % [int(hsv.x * 360.0), int(hsv.y * 100.0), int(hsv.z * 100.0)]
-    hex_label.text = "HEX: #%s  •  DEEL: %s" % [color.to_html(false), part_name]
+    hsv_label.text = "HSV: %d deg, %d%%, %d%%" % [int(hsv.x * 360.0), int(hsv.y * 100.0), int(hsv.z * 100.0)]
+    hex_label.text = "HEX: #%s  |  DEEL: %s" % [color.to_html(false), part_name]
 
 func _on_paint_applied(part_name: String, _color: Color) -> void:
     if status_label:

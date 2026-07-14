@@ -9,7 +9,6 @@ func _ready() -> void:
     if not _is_logged_in():
         call_deferred("_open_scene", "res://scenes/login_menu.tscn", false)
         return
-    Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
     var cursor := get_node_or_null("/root/CursorManager")
     if cursor:
         cursor.set_mode(cursor.CursorMode.UI)

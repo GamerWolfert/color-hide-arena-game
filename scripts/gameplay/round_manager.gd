@@ -137,8 +137,6 @@ func _on_timer_timeout() -> void:
 			_assign_roles()
 			_set_state(RoundState.HIDING, hiding_time, "Verstopfase - zoek een goede plek")
 		RoundState.HIDING:
-			if player.has_method("set_hider"):
-				player.set_hider(false)
 			if player.has_method("set_round_input_locked"):
 				player.set_round_input_locked(false)
 			_set_state(RoundState.SEARCHING, seeking_time, "Zoekfase - scan verdachte plekken")

@@ -16,18 +16,18 @@ shape = SubResource("CapsuleShape3D_player")
 [node name="MecchaCharacter" parent="." instance=ExtResource("2")]
 
 [node name="YawRoot" type="Node3D" parent="."]
-position = Vector3(0, 1.38, 0)
+position = Vector3(0, 1.56, 0)
 
 [node name="PitchRoot" type="Node3D" parent="YawRoot"]
-rotation = Vector3(-0.17453, 0, 0)
+rotation = Vector3(-0.174533, 0, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="YawRoot/PitchRoot"]
-spring_length = 6.2
+spring_length = 6.4
 margin = 0.3
 
 [node name="Camera3D" type="Camera3D" parent="YawRoot/PitchRoot/SpringArm3D"]
 current = true
-fov = 60.0
+fov = 66.0
 
 [node name="RayCast3D" type="RayCast3D" parent="YawRoot/PitchRoot/SpringArm3D/Camera3D"]
 target_position = Vector3(0, 0, -8)

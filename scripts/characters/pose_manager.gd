@@ -51,12 +51,12 @@ func apply_pose() -> void:
 	if not torso or not head or not left_arm or not right_arm or not left_leg or not right_leg:
 		return
 	var defaults := {
-		"Torso": [Vector3(0, 1.02, 0), Vector3.ONE],
-		"Head": [Vector3(0, 1.80, 0), Vector3.ONE],
-		"LeftArm": [Vector3(-0.56, 1.12, 0), Vector3.ONE],
-		"RightArm": [Vector3(0.56, 1.12, 0), Vector3.ONE],
-		"LeftLeg": [Vector3(-0.23, 0.43, 0), Vector3.ONE],
-		"RightLeg": [Vector3(0.23, 0.43, 0), Vector3.ONE]
+		"Torso": [Vector3(0, 1.04, 0), Vector3(1.0, 1.0, 0.795)],
+		"Head": [Vector3(0, 1.76, -0.015), Vector3(1.0, 1.0, 0.96)],
+		"LeftArm": [Vector3(-0.38, 1.04, 0), Vector3(1.0, 1.0, 1.027)],
+		"RightArm": [Vector3(0.38, 1.04, 0), Vector3(1.0, 1.0, 1.027)],
+		"LeftLeg": [Vector3(-0.18, 0.42, -0.01), Vector3(1.0, 1.0, 1.15)],
+		"RightLeg": [Vector3(0.18, 0.42, -0.01), Vector3(1.0, 1.0, 1.15)]
 	}
 	for part_name in defaults:
 		var part: Node3D = body_parts.get(part_name)

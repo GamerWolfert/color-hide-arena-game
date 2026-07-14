@@ -18,7 +18,9 @@ var standing_height := 1.8
 var crouching_height := 1.1
 
 func _ready():
-    Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+    var cursor := get_node_or_null("/root/CursorManager")
+    if cursor:
+        cursor.set_mode(cursor.CursorMode.GAMEPLAY)
     ray.add_exception(self)
     apply_color(Color.WHITE)
 
@@ -28,7 +30,9 @@ func _unhandled_input(event):
         pivot.rotate_x(-event.relative.y * mouse_sensitivity)
         pivot.rotation.x = clamp(pivot.rotation.x, deg_to_rad(-55), deg_to_rad(55))
     elif event.is_action_pressed("ui_cancel"):
-        Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+        var cursor := get_node_or_null("/root/CursorManager")
+        if cursor:
+            cursor.set_mode(cursor.CursorMode.UI)
     elif event.is_action_pressed("toggle_role"):
         is_hider = !is_hider
         $"../UI".set_role(is_hider)

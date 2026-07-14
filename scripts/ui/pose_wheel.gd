@@ -5,6 +5,7 @@ signal closed
 
 const PoseManagerScript := preload("res://scripts/characters/pose_manager.gd")
 const SEGMENT_COUNT := 8
+const POSE_LABELS := ["Staan", "Zitten", "Rugligging", "Buikligging", "Armen omhoog", "Hurken", "Leunen", "Zwaaien"]
 
 var player: Node
 var selected_index := -1
@@ -23,6 +24,8 @@ func open(next_player: Node) -> void:
 	var input_service := get_node_or_null("/root/InputService")
 	if input_service:
 		input_service.set_touch_input_blocked(true)
+	if player and player.has_method("set_menu_input_locked"):
+		player.set_menu_input_locked(true)
 	var cursor := get_node_or_null("/root/CursorManager")
 	if cursor:
 		cursor.set_mode(cursor.CursorMode.UI)
@@ -34,6 +37,8 @@ func close_wheel() -> void:
 	var input_service := get_node_or_null("/root/InputService")
 	if input_service:
 		input_service.set_touch_input_blocked(false)
+	if player and player.has_method("set_menu_input_locked"):
+		player.set_menu_input_locked(false)
 	var cursor := get_node_or_null("/root/CursorManager")
 	if cursor:
 		cursor.set_mode(cursor.CursorMode.GAMEPLAY)
@@ -100,27 +105,68 @@ func _draw() -> void:
 		var end_angle := -PI * 0.5 + (index + 1) * TAU / SEGMENT_COUNT + 0.018
 		var color := Color(0.05, 0.10, 0.16, 0.96)
 		if index == selected_index:
-			color = Color(0.20, 0.08, 0.30, 1.0)
+			color = Color(0.43, 0.10, 0.62, 1.0)
 		var points := PackedVector2Array([_center])
 		for point_index in range(13):
 			points.append(_center + Vector2.from_angle(lerpf(start_angle, end_angle, float(point_index) / 12.0)) * 184.0)
 		draw_colored_polygon(points, color)
 		draw_arc(_center, 184.0, start_angle, end_angle, 18, Color(0.20, 0.78, 0.76, 0.65), 1.0)
-		_draw_pose_icon(_center + Vector2.from_angle((start_angle + end_angle) * 0.5) * 126.0, index == selected_index)
-		_draw_pose_label(_center + Vector2.from_angle((start_angle + end_angle) * 0.5) * 162.0, PoseManagerScript.POSE_NAMES[index])
+		_draw_pose_icon(_center + Vector2.from_angle((start_angle + end_angle) * 0.5) * 126.0, index, index == selected_index)
+		_draw_pose_label(_center + Vector2.from_angle((start_angle + end_angle) * 0.5) * 162.0, POSE_LABELS[index])
 	draw_circle(_center, 42.0, Color(0.03, 0.055, 0.09, 1.0))
 	draw_arc(_center, 42.0, 0.0, TAU, 36, Color(0.96, 0.76, 0.22, 0.9), 2.0)
 	draw_line(_center + Vector2(-12, -12), _center + Vector2(12, 12), Color.WHITE, 3.0)
 	draw_line(_center + Vector2(12, -12), _center + Vector2(-12, 12), Color.WHITE, 3.0)
 
-func _draw_pose_icon(center: Vector2, highlighted: bool) -> void:
+func _draw_pose_icon(center: Vector2, pose_index: int, highlighted: bool) -> void:
 	var color := Color(1.0, 0.96, 0.88) if highlighted else Color(0.86, 0.90, 0.88)
-	draw_circle(center + Vector2(0, -12), 8.0, color)
-	draw_circle(center + Vector2(0, 4), 10.0, color)
-	draw_line(center + Vector2(-6, 12), center + Vector2(-10, 24), color, 4.0, true)
-	draw_line(center + Vector2(6, 12), center + Vector2(10, 24), color, 4.0, true)
-	draw_line(center + Vector2(-9, 0), center + Vector2(-18, 7), color, 3.0, true)
-	draw_line(center + Vector2(9, 0), center + Vector2(18, 7), color, 3.0, true)
+	var head := center + Vector2(0, -13)
+	var torso := center + Vector2(0, 3)
+	var left_hand := center + Vector2(-17, 8)
+	var right_hand := center + Vector2(17, 8)
+	var left_foot := center + Vector2(-9, 25)
+	var right_foot := center + Vector2(9, 25)
+	match pose_index:
+		1:
+			torso.y += 4
+			left_foot = center + Vector2(-16, 16)
+			right_foot = center + Vector2(16, 16)
+		2:
+			head = center + Vector2(-19, 0)
+			torso = center
+			left_hand = center + Vector2(-5, -11)
+			right_hand = center + Vector2(8, 11)
+			left_foot = center + Vector2(20, -7)
+			right_foot = center + Vector2(20, 7)
+		3:
+			head = center + Vector2(19, 0)
+			torso = center
+			left_hand = center + Vector2(-8, -10)
+			right_hand = center + Vector2(-8, 10)
+			left_foot = center + Vector2(-20, -7)
+			right_foot = center + Vector2(-20, 7)
+		4:
+			left_hand = center + Vector2(-12, -22)
+			right_hand = center + Vector2(12, -22)
+		5:
+			torso.y += 6
+			head.y += 5
+			left_foot = center + Vector2(-15, 20)
+			right_foot = center + Vector2(15, 20)
+		6:
+			head += Vector2(7, 1)
+			torso += Vector2(4, 2)
+			left_foot += Vector2(8, 0)
+			right_foot += Vector2(8, 0)
+		7:
+			right_hand = center + Vector2(12, -22)
+			left_hand = center + Vector2(-18, 8)
+	draw_circle(head, 7.5, color)
+	draw_circle(torso, 9.5, color)
+	draw_line(torso + Vector2(-4, 6), left_foot, color, 4.2, true)
+	draw_line(torso + Vector2(4, 6), right_foot, color, 4.2, true)
+	draw_line(torso + Vector2(-6, -2), left_hand, color, 3.6, true)
+	draw_line(torso + Vector2(6, -2), right_hand, color, 3.6, true)
 
 func _draw_pose_label(center: Vector2, value: String) -> void:
 	var font := ThemeDB.fallback_font

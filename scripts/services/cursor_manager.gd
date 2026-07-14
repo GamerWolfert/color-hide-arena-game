@@ -41,7 +41,11 @@ func set_pressed(value: bool) -> void:
 	if game_cursor and is_instance_valid(game_cursor):
 		game_cursor.set_pressed(value)
 
-func _unhandled_input(event: InputEvent) -> void:
+func set_hovered(value: bool) -> void:
+	if game_cursor and is_instance_valid(game_cursor) and game_cursor.has_method("set_hovered"):
+		game_cursor.set_hovered(value)
+
+func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		set_pressed(event.pressed)
 
@@ -67,3 +71,7 @@ func _make_transparent_os_cursor() -> void:
 func _is_mobile() -> bool:
 	var device := get_node_or_null("/root/DeviceService")
 	return device != null and (device.is_mobile() or device.has_touchscreen())
+
+func _exit_tree() -> void:
+	Input.set_custom_mouse_cursor(null)
+	_transparent_cursor = null

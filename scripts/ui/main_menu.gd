@@ -53,7 +53,6 @@ func _ready() -> void:
 	var game_state := get_node_or_null("/root/GameState")
 	if game_state:
 		game_state.set_state(game_state.State.MAIN_MENU)
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	var cursor := get_node_or_null("/root/CursorManager")
 	if cursor:
 		cursor.set_mode(cursor.CursorMode.UI)

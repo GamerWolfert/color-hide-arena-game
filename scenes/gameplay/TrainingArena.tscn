@@ -14,19 +14,19 @@ script = ExtResource("1")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-55, -25, 0)
-light_energy = 1.35
+light_energy = 0.28
 light_color = Color(0.78, 0.88, 1, 1)
 shadow_enabled = true
 
 [node name="TrainingMap" parent="." instance=ExtResource("2")]
 
 [node name="Player" parent="." instance=ExtResource("3")]
-position = Vector3(0, 1.2, 4)
+position = Vector3(0, 1.2, 11)
 
 [node name="Spawns" type="Node3D" parent="."]
 
 [node name="HiderSpawn" type="Marker3D" parent="Spawns"]
-position = Vector3(0, 1.2, 4)
+position = Vector3(0, 1.2, 11)
 
 [node name="SeekerSpawn" type="Marker3D" parent="Spawns"]
 position = Vector3(0, 1.2, -18)

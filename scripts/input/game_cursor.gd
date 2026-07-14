@@ -4,6 +4,7 @@ enum CursorMode { UI, PAINT, EYEDROPPER }
 
 var cursor_mode := CursorMode.UI
 var pressed := false
+var hovered := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -18,6 +19,10 @@ func set_pressed(value: bool) -> void:
 	pressed = value
 	queue_redraw()
 
+func set_hovered(value: bool) -> void:
+	hovered = value
+	queue_redraw()
+
 func _process(_delta: float) -> void:
 	if visible:
 		global_position = get_viewport().get_mouse_position() - size * 0.5
@@ -26,8 +31,10 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	var accent := Color(0.24, 0.96, 0.86)
 	var secondary := Color(0.72, 0.36, 1.0)
+	if hovered:
+		accent = Color(1.0, 0.82, 0.25)
 	if pressed:
-		accent = Color(1.0, 0.78, 0.22)
+		accent = Color(1.0, 0.42, 0.20)
 	match cursor_mode:
 		CursorMode.PAINT:
 			draw_circle(Vector2(16, 16), 8.0, Color(0.04, 0.10, 0.15, 0.92))

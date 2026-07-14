@@ -28,7 +28,6 @@ var _timeout_left := 0.0
 var _mode: AuthMode = AuthMode.LOGIN
 
 func _ready() -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	var cursor := get_node_or_null("/root/CursorManager")
 	if cursor:
 		cursor.set_mode(cursor.CursorMode.UI)

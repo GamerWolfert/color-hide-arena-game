@@ -3,7 +3,7 @@ extends Node3D
 const HiderBotScript := preload("res://scripts/characters/hider_bot.gd")
 const SeekerBotScript := preload("res://scripts/characters/seeker_bot.gd")
 const MobileControlsScript := preload("res://scripts/input/mobile_controls.gd")
-const DebugVisualsScript := preload("res://scripts/ui/debug_visuals.gd")
+const GameplayValidatorScript := preload("res://scripts/gameplay/gameplay_validator.gd")
 
 @export_range(0, 8, 1) var hider_bot_count := 0
 @export_range(0, 8, 1) var seeker_bot_count := 1
@@ -24,8 +24,6 @@ func _ready() -> void:
 	var cursor := get_node_or_null("/root/CursorManager")
 	if cursor:
 		cursor.set_mode(cursor.CursorMode.GAMEPLAY)
-	else:
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	_add_mobile_controls_if_needed()
 	if round_manager.has_method("set_network_authoritative"):
 		round_manager.set_network_authoritative(networked)
@@ -47,6 +45,10 @@ func _ready() -> void:
 		hud._on_hider_count_changed(round_manager.remaining_hiders, round_manager.total_hiders)
 		player.seeker_scanned.connect(round_manager.register_scan)
 		pause_menu.restart_requested.connect(round_manager.restart_round)
+	var validator := GameplayValidatorScript.new()
+	validator.name = "GameplayValidator"
+	add_child(validator)
+	validator.call_deferred("validate_gameplay", self)
 
 func _add_mobile_controls_if_needed() -> void:
 	var device := get_node_or_null("/root/DeviceService")
@@ -85,8 +87,3 @@ func _spawn_bots() -> void:
 		seeker_bots.append(seeker)
 	round_manager.set_hiders(hider_bots)
 	round_manager.set_seekers(seeker_bots)
-	if OS.is_debug_build():
-		var debug_visuals := DebugVisualsScript.new()
-		debug_visuals.name = "DebugVisuals"
-		add_child(debug_visuals)
-		debug_visuals.setup([player] + hider_bots + seeker_bots)

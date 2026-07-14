@@ -25,13 +25,9 @@ func toggle_pause() -> void:
 	if visible:
 		if cursor:
 			cursor.set_mode(cursor.CursorMode.UI)
-		else:
-			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	else:
 		if cursor:
 			cursor.set_mode(cursor.CursorMode.GAMEPLAY)
-		else:
-			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		call_deferred("_recapture_game_mouse")
 	var input_service := get_node_or_null("/root/InputService")
 	if input_service:
@@ -43,8 +39,6 @@ func _recapture_game_mouse() -> void:
 		var cursor := get_node_or_null("/root/CursorManager")
 		if cursor:
 			cursor.set_mode(cursor.CursorMode.GAMEPLAY)
-		else:
-			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _build() -> void:
 	var dim := ColorRect.new()

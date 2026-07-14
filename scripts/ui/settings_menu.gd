@@ -10,7 +10,6 @@ func _ready() -> void:
     if not _is_logged_in():
         call_deferred("_go_to_login")
         return
-    Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
     var cursor := get_node_or_null("/root/CursorManager")
     if cursor:
         cursor.set_mode(cursor.CursorMode.UI)
