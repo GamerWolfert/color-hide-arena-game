@@ -29,6 +29,7 @@ var seconds_left := 0
 var state: RoundState = RoundState.WAITING
 var phase_name := "Waiting"
 var hiders: Array = []
+var seekers: Array = []
 var total_hiders := 0
 var remaining_hiders := 0
 var round_number := 0
@@ -46,6 +47,9 @@ func set_hiders(next_hiders: Array) -> void:
 		if hider.has_signal("found") and not hider.found.is_connected(_on_hider_found):
 			hider.found.connect(_on_hider_found)
 	hider_count_changed.emit(remaining_hiders, total_hiders)
+
+func set_seekers(next_seekers: Array) -> void:
+	seekers = next_seekers
 
 func start_round() -> void:
 	if not is_inside_tree():
@@ -178,6 +182,9 @@ func _reset_players() -> void:
 				hider.visible = true
 				hider.set_collision_layer_value(1, true)
 				hider.set_collision_mask_value(1, true)
+	for seeker in seekers:
+		if is_instance_valid(seeker) and seeker.has_method("reset_for_round"):
+			seeker.reset_for_round()
 
 func _refresh_hider_count() -> void:
 	remaining_hiders = 0

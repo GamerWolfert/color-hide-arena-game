@@ -3,6 +3,7 @@ extends Node3D
 const HiderBotScript := preload("res://scripts/characters/hider_bot.gd")
 const SeekerBotScript := preload("res://scripts/characters/seeker_bot.gd")
 const MobileControlsScript := preload("res://scripts/input/mobile_controls.gd")
+const DebugVisualsScript := preload("res://scripts/ui/debug_visuals.gd")
 
 @onready var player := $Player
 @onready var hud := $HUD
@@ -55,3 +56,8 @@ func _spawn_bots() -> void:
 	seeker.bot_found_hider.connect(func(target): round_manager.register_scan(true, target, 100.0))
 	seeker_bots.append(seeker)
 	round_manager.set_hiders(hider_bots)
+	round_manager.set_seekers(seeker_bots)
+	var debug_visuals := DebugVisualsScript.new()
+	debug_visuals.name = "DebugVisuals"
+	add_child(debug_visuals)
+	debug_visuals.setup([player] + hider_bots + seeker_bots)

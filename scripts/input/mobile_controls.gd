@@ -11,6 +11,10 @@ func _ready() -> void:
     queue_redraw()
 
 func _gui_input(event: InputEvent) -> void:
+    var input_service := get_node_or_null("/root/InputService")
+    if input_service and input_service.touch_input_blocked:
+        input_service.clear_touch_input()
+        return
     if event is InputEventScreenTouch:
         if event.pressed:
             if event.position.x < size.x * 0.48 and _move_touch == -1:

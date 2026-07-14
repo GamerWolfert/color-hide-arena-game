@@ -29,6 +29,16 @@ func setup(points: Array, hiders: Array) -> void:
 		global_position = patrol_points[0].global_position
 		navigation_agent.target_position = patrol_points[0].global_position
 
+func reset_for_round() -> void:
+	if patrol_points.is_empty():
+		return
+	target_index = 0
+	scan_timer = 0.0
+	velocity = Vector3.ZERO
+	global_position = patrol_points[0].global_position
+	if navigation_agent:
+		navigation_agent.target_position = global_position
+
 func _physics_process(delta: float) -> void:
 	_patrol(delta)
 	scan_timer -= delta

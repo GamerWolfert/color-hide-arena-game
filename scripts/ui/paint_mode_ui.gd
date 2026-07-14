@@ -52,8 +52,11 @@ func toggle() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
         var input_service := get_node_or_null("/root/InputService")
         if input_service:
-            input_service.clear_touch_input()
+            input_service.set_touch_input_blocked(true)
     else:
+        var input_service := get_node_or_null("/root/InputService")
+        if input_service:
+            input_service.set_touch_input_blocked(false)
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func close() -> void:

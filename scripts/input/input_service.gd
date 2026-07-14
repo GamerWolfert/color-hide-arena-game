@@ -10,6 +10,7 @@ const DEFAULT_ACTIONS := [
 
 var _touch_move := Vector2.ZERO
 var _touch_look := Vector2.ZERO
+var touch_input_blocked := false
 
 func _ready() -> void:
     _ensure_actions()
@@ -77,6 +78,11 @@ func set_touch_look(value: Vector2) -> void:
 func clear_touch_input() -> void:
     _touch_move = Vector2.ZERO
     _touch_look = Vector2.ZERO
+
+func set_touch_input_blocked(blocked: bool) -> void:
+    touch_input_blocked = blocked
+    if blocked:
+        clear_touch_input()
 
 func reset_bindings() -> void:
     for action in DEFAULT_ACTIONS:
