@@ -84,7 +84,7 @@ text = "CHAMELEON"
 
 [node name="ByLabel" type="Label" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo"]
 layout_mode = 2
-text = "by GamerWolfertYT"
+text = "by Camouflage-speler"
 
 [node name="Subtitle" type="Label" parent="SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent"]
 layout_mode = 2
@@ -106,36 +106,78 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="RightProfilePanel" type="PanelContainer" parent="SafeArea/ContentLayout"]
+[node name="RightColumn" type="VBoxContainer" parent="SafeArea/ContentLayout"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="RightProfilePanel" type="PanelContainer" parent="SafeArea/ContentLayout/RightColumn"]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 
-[node name="ProfileMargin" type="MarginContainer" parent="SafeArea/ContentLayout/RightProfilePanel"]
+[node name="ProfileMargin" type="MarginContainer" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="ProfileContent" type="VBoxContainer" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin"]
+[node name="ProfileContent" type="VBoxContainer" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ProfileHeading" type="Label" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent"]
+[node name="ProfileHeading" type="Label" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent"]
 layout_mode = 2
 text = "PLAYER PROFILE"
 
-[node name="ProfileNameLabel" type="Label" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent"]
+[node name="ProfileNameLabel" type="Label" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent"]
 layout_mode = 2
 text = "Profiel wordt geladen..."
 
-[node name="ProfileStatsLabel" type="Label" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent"]
+[node name="ProfileStatsLabel" type="Label" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent"]
 layout_mode = 2
 text = "Level 1\nXP 0 / 100\nStatus Online\nSkin Neutraal\nLaatste modus Training"
 
-[node name="DeviceLabel" type="Label" parent="SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent"]
+[node name="DeviceLabel" type="Label" parent="SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent"]
 layout_mode = 2
 text = "Apparaat wordt gedetecteerd..."
+
+[node name="LatestSessionPanel" type="PanelContainer" parent="SafeArea/ContentLayout/RightColumn"]
+custom_minimum_size = Vector2(300, 220)
+layout_mode = 2
+
+[node name="LatestMargin" type="MarginContainer" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="LatestContent" type="VBoxContainer" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LatestHeading" type="Label" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent"]
+layout_mode = 2
+text = "LAATSTE SPEELSESSIE"
+theme_override_font_sizes/font_size = 17
+
+[node name="LatestMode" type="Label" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent"]
+layout_mode = 2
+text = "Modus\nNog geen gespeelde sessie"
+
+[node name="LatestRole" type="Label" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent"]
+layout_mode = 2
+text = "Rol\n-"
+
+[node name="LatestResult" type="Label" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent"]
+layout_mode = 2
+text = "Resultaat\n-"
+
+[node name="LatestXP" type="Label" parent="SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent"]
+layout_mode = 2
+text = "XP verdiend\n-"
 
 [node name="BottomInfoBar" type="PanelContainer" parent="."]
 layout_mode = 1

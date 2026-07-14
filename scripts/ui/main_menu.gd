@@ -12,13 +12,19 @@ const CREDITS_SCENE := "res://scenes/menus/credits_menu.tscn"
 
 @onready var safe_area: MarginContainer = $SafeArea
 @onready var left_menu: PanelContainer = $SafeArea/ContentLayout/LeftMenu
+@onready var right_column: VBoxContainer = $SafeArea/ContentLayout/RightColumn
 @onready var button_container: VBoxContainer = $SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/ButtonScroll/ButtonContainer
 @onready var button_scroll: ScrollContainer = $SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/ButtonScroll
-@onready var right_profile_panel: PanelContainer = $SafeArea/ContentLayout/RightProfilePanel
-@onready var profile_heading: Label = $SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent/ProfileHeading
-@onready var profile_name_label: Label = $SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent/ProfileNameLabel
-@onready var profile_stats_label: Label = $SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent/ProfileStatsLabel
-@onready var device_label: Label = $SafeArea/ContentLayout/RightProfilePanel/ProfileMargin/ProfileContent/DeviceLabel
+@onready var right_profile_panel: PanelContainer = $SafeArea/ContentLayout/RightColumn/RightProfilePanel
+@onready var profile_heading: Label = $SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent/ProfileHeading
+@onready var profile_name_label: Label = $SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent/ProfileNameLabel
+@onready var profile_stats_label: Label = $SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent/ProfileStatsLabel
+@onready var device_label: Label = $SafeArea/ContentLayout/RightColumn/RightProfilePanel/ProfileMargin/ProfileContent/DeviceLabel
+@onready var latest_session_panel: PanelContainer = $SafeArea/ContentLayout/RightColumn/LatestSessionPanel
+@onready var latest_mode_label: Label = $SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent/LatestMode
+@onready var latest_role_label: Label = $SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent/LatestRole
+@onready var latest_result_label: Label = $SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent/LatestResult
+@onready var latest_xp_label: Label = $SafeArea/ContentLayout/RightColumn/LatestSessionPanel/LatestMargin/LatestContent/LatestXP
 @onready var logo_top: Label = $SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo/LogoTop
 @onready var logo_bottom: Label = $SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo/LogoBottom
 @onready var by_label: Label = $SafeArea/ContentLayout/LeftMenu/MenuMargin/MenuContent/Logo/ByLabel
@@ -64,6 +70,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _style_static_controls() -> void:
     left_menu.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.045, 0.085, 0.92), Color(0.12, 0.90, 0.82, 0.88)))
     right_profile_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.04, 0.035, 0.09, 0.88), Color(0.55, 0.27, 0.95, 0.86)))
+    latest_session_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.045, 0.085, 0.92), Color(0.12, 0.68, 0.90, 0.82)))
     bottom_info_bar.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.04, 0.075, 0.88), Color(0.12, 0.64, 0.72, 0.68), 6))
     logo_top.add_theme_font_size_override("font_size", 42)
     logo_top.add_theme_color_override("font_color", Color(0.18, 0.96, 0.84))
@@ -78,6 +85,10 @@ func _style_static_controls() -> void:
     profile_name_label.add_theme_font_size_override("font_size", 24)
     profile_name_label.add_theme_color_override("font_color", Color(0.96, 0.98, 1.0))
     profile_stats_label.add_theme_color_override("font_color", Color(0.74, 0.84, 0.95))
+    latest_mode_label.add_theme_color_override("font_color", Color(0.24, 0.92, 0.84))
+    latest_role_label.add_theme_color_override("font_color", Color(0.24, 0.92, 0.84))
+    latest_result_label.add_theme_color_override("font_color", Color(0.98, 0.76, 0.22))
+    latest_xp_label.add_theme_color_override("font_color", Color(0.76, 0.86, 0.96))
     device_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     device_label.add_theme_color_override("font_color", Color(1.0, 0.76, 0.32))
     for child in $BottomInfoBar/BottomInfoContent.get_children():
@@ -143,15 +154,33 @@ func _on_button_pressed(callback: Callable) -> void:
 
 func _update_profile() -> void:
     var session := get_node_or_null("/root/SessionManager")
-    var player_name := "Profiel wordt geladen..."
+    var player_name := "Camouflage-speler"
     if session and not session.display_name.is_empty():
         player_name = str(session.display_name)
     elif session and not session.email.is_empty():
         player_name = str(session.email)
-    profile_name_label.text = "Welkom, %s" % player_name
-    profile_stats_label.text = "Level 1\nXP 0 / 100\nStatus Online\nSkin Neutraal\nLaatste modus Training"
+    by_label.text = "by %s" % player_name
+    profile_name_label.text = "Welkom terug,\n%s" % player_name
+    var history := get_node_or_null("/root/SessionHistoryService")
+    var last_session: Dictionary = history.get_last_session() if history else {}
+    var last_mode := str(last_session.get("mode", "Nog geen sessie"))
+    var last_xp := int(last_session.get("xp", 0))
+    profile_stats_label.text = "Level 1\nXP %d / 7500\nStatus Online\nSkin Neutraal\nLaatste modus %s" % [last_xp, last_mode]
+    _update_latest_session(last_session)
     var device := _device_service()
     device_label.text = "Apparaat: %s" % (device.get_summary() if device else "Onbekend")
+
+func _update_latest_session(last_session: Dictionary) -> void:
+    if last_session.is_empty():
+        latest_mode_label.text = "Modus\nNog geen gespeelde sessie"
+        latest_role_label.text = "Rol\n-"
+        latest_result_label.text = "Resultaat\n-"
+        latest_xp_label.text = "XP verdiend\n-"
+        return
+    latest_mode_label.text = "Modus\n%s" % str(last_session.get("mode", "Onbekend"))
+    latest_role_label.text = "Rol\n%s" % str(last_session.get("role", "Onbekend"))
+    latest_result_label.text = "Resultaat\n%s" % str(last_session.get("result", "Onbekend"))
+    latest_xp_label.text = "XP verdiend\n+%d XP" % int(last_session.get("xp", 0))
 
 func _configure_layout() -> void:
     var viewport_size := get_viewport_rect().size
@@ -164,7 +193,7 @@ func _configure_layout() -> void:
         safe_area.offset_bottom = -58.0
         left_menu.custom_minimum_size = Vector2.ZERO
         left_menu.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-        right_profile_panel.visible = false
+        right_column.visible = false
         button_scroll.custom_minimum_size = Vector2(0.0, 190.0)
         logo_top.add_theme_font_size_override("font_size", 31)
         logo_bottom.add_theme_font_size_override("font_size", 28)
@@ -175,7 +204,7 @@ func _configure_layout() -> void:
         safe_area.offset_bottom = -78.0
         left_menu.custom_minimum_size = Vector2(410.0, 0.0)
         left_menu.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-        right_profile_panel.visible = true
+        right_column.visible = true
         button_scroll.custom_minimum_size = Vector2(0.0, 280.0)
         logo_top.add_theme_font_size_override("font_size", 42)
         logo_bottom.add_theme_font_size_override("font_size", 38)

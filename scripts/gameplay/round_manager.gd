@@ -117,6 +117,11 @@ func _on_timer_timeout() -> void:
 
 func _finish_round(winner: String) -> void:
 	_set_state(RoundState.RESULTS, results_time, "%s wint de ronde" % winner)
+	var history := get_node_or_null("/root/SessionHistoryService")
+	if history and player:
+		var role := "Hider" if player.is_hider else "Seeker"
+		var result := "Gewonnen" if (role == "Hider" and winner == "HIDER") or (role == "Seeker" and winner == "SEEKER") else "Verloren"
+		history.record_round(round_mode, role, result, 275 if result == "Gewonnen" else 90)
 	round_finished.emit(winner)
 
 func _set_state(new_state: RoundState, duration: int, message: String) -> void:
