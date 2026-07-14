@@ -36,6 +36,7 @@ var total_hiders := 0
 var remaining_hiders := 0
 var round_number := 0
 var _started := false
+var network_authoritative := false
 
 func _ready() -> void:
 	timer.wait_time = 1.0
@@ -59,7 +60,7 @@ func set_seekers(next_seekers: Array) -> void:
 	_emit_role_counts()
 
 func start_round() -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or network_authoritative:
 		return
 	_started = true
 	round_number += 1
@@ -71,7 +72,14 @@ func start_round() -> void:
 	_set_state(RoundState.WAITING, waiting_time, "Wachten op spelers")
 
 func restart_round() -> void:
+	if network_authoritative:
+		return
 	start_round()
+
+func set_network_authoritative(value: bool) -> void:
+	network_authoritative = value
+	if network_authoritative:
+		timer.stop()
 
 func register_scan(found: bool, target: Node = null, _energy: float = 0.0) -> void:
 	if state != RoundState.SEARCHING:

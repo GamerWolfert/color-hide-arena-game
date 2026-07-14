@@ -3,7 +3,7 @@ extends Control
 const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 const LOGIN_SCENE := "res://scenes/login_menu.tscn"
 const TRAINING_SETUP_SCENE := "res://scenes/menus/training_setup_menu.tscn"
-const LOBBY_BROWSER_SCENE := "res://scenes/multiplayer/lobby_browser.tscn"
+const LOBBY_BROWSER_SCENE := "res://scenes/multiplayer/lobby.tscn"
 const PRIVATE_LOBBY_SCENE := "res://scenes/multiplayer/private_lobby.tscn"
 const PROFILE_SCENE := "res://scenes/menus/profile_menu.tscn"
 const CUSTOMIZATION_SCENE := "res://scenes/menus/customization_menu.tscn"

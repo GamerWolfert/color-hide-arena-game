@@ -15,19 +15,32 @@ var hider_bots: Array = []
 var seeker_bots: Array = []
 
 func _ready() -> void:
+	var network := get_node_or_null("/root/NetworkManager")
+	var networked: bool = network != null and network.is_networked
 	var cursor := get_node_or_null("/root/CursorManager")
 	if cursor:
 		cursor.set_mode(cursor.CursorMode.GAMEPLAY)
 	else:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	_add_mobile_controls_if_needed()
-	_spawn_bots()
+	if round_manager.has_method("set_network_authoritative"):
+		round_manager.set_network_authoritative(networked)
+	if not networked:
+		_spawn_bots()
 	hud.bind_player(player)
-	hud.bind_round_manager(round_manager)
-	hud._on_phase_changed(round_manager._phase_name(), round_manager.seconds_left)
-	hud._on_hider_count_changed(round_manager.remaining_hiders, round_manager.total_hiders)
-	player.seeker_scanned.connect(round_manager.register_scan)
-	pause_menu.restart_requested.connect(round_manager.restart_round)
+	if networked:
+		network.register_game_world(self, player)
+		hud.bind_round_manager(network.match_manager)
+		player.seeker_scanned.connect(func(_found, _target, _energy): network.request_scan(-player.camera.global_transform.basis.z))
+		player.pose_changed.connect(func(_pose_name): network.request_appearance(player.get_selected_part_name(), player.get_body_part_color(player.get_selected_part_name()), player.pose_index))
+		if hud.paint_ui and hud.paint_ui.has_signal("paint_applied"):
+			hud.paint_ui.paint_applied.connect(func(part_name, color): network.request_appearance(part_name, color, player.pose_index))
+	else:
+		hud.bind_round_manager(round_manager)
+		hud._on_phase_changed(round_manager._phase_name(), round_manager.seconds_left)
+		hud._on_hider_count_changed(round_manager.remaining_hiders, round_manager.total_hiders)
+		player.seeker_scanned.connect(round_manager.register_scan)
+		pause_menu.restart_requested.connect(round_manager.restart_round)
 
 func _add_mobile_controls_if_needed() -> void:
 	var device := get_node_or_null("/root/DeviceService")
