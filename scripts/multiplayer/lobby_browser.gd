@@ -1,13 +1,13 @@
 extends Control
 
-const UIStyle := preload("res://scripts/ui/ui_style.gd")
+const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 
 func _ready() -> void:
     if not _is_logged_in():
         call_deferred("_open_scene", "res://scenes/login_menu.tscn")
         return
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-    UIStyle.apply_theme(self)
+    UI_STYLE.apply_theme(self)
     _build()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -26,14 +26,14 @@ func _build() -> void:
     panel.offset_top = -185.0
     panel.offset_right = 300.0
     panel.offset_bottom = 185.0
-    panel.add_theme_stylebox_override("panel", UIStyle.panel(Color(0.04, 0.05, 0.11, 0.96), Color(0.58, 0.28, 0.94, 0.9)))
+    panel.add_theme_stylebox_override("panel", UI_STYLE.panel(Color(0.04, 0.05, 0.11, 0.96), Color(0.58, 0.28, 0.94, 0.9)))
     add_child(panel)
     var box := VBoxContainer.new()
     box.add_theme_constant_override("separation", 14)
     panel.add_child(box)
     var title := Label.new()
     title.text = "MULTIPLAYER"
-    UIStyle.title(title, 34)
+    UI_STYLE.title(title, 34)
     box.add_child(title)
     var status := Label.new()
     status.name = "LobbyStatus"
@@ -51,7 +51,7 @@ func _button(text_value: String, callback: Callable) -> Button:
     var button := Button.new()
     button.text = text_value
     button.custom_minimum_size = Vector2(230.0, 44.0)
-    button.add_theme_stylebox_override("normal", UIStyle.button())
+    button.add_theme_stylebox_override("normal", UI_STYLE.button())
     button.pressed.connect(callback)
     return button
 

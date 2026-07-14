@@ -1,17 +1,17 @@
 extends Control
 
-const UIStyle := preload("res://scripts/ui/ui_style.gd")
+const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 const MAIN_MENU_SCENE := "res://scenes/menus/main_menu.tscn"
 
 var waiting_for_action := ""
 var action_buttons: Dictionary = {}
 
 func _ready() -> void:
-	if not _is_logged_in():
-		call_deferred("_go_to_login")
-		return
+    if not _is_logged_in():
+        call_deferred("_go_to_login")
+        return
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-    UIStyle.apply_theme(self)
+    UI_STYLE.apply_theme(self)
     _build()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -42,7 +42,7 @@ func _build() -> void:
 
     var title := Label.new()
     title.text = "INSTELLINGEN"
-    UIStyle.title(title, 38)
+    UI_STYLE.title(title, 38)
     column.add_child(title)
 
     var tabs := TabContainer.new()
@@ -218,8 +218,8 @@ func _add_button(parent: Container, text: String, callback: Callable) -> void:
     var button := Button.new()
     button.text = text
     button.custom_minimum_size = Vector2(190, 42)
-    button.add_theme_stylebox_override("normal", UIStyle.button())
-    button.add_theme_stylebox_override("hover", UIStyle.button(Color(0.12, 0.25, 0.24), Color(0.18, 0.95, 0.72)))
+    button.add_theme_stylebox_override("normal", UI_STYLE.button())
+    button.add_theme_stylebox_override("hover", UI_STYLE.button(Color(0.12, 0.25, 0.24), Color(0.18, 0.95, 0.72)))
     button.pressed.connect(callback)
     parent.add_child(button)
 

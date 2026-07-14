@@ -1,6 +1,6 @@
 extends Control
 
-const UIStyle := preload("res://scripts/ui/ui_style.gd")
+const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 const LOGIN_SCENE := "res://scenes/login_menu.tscn"
 const TRAINING_SETUP_SCENE := "res://scenes/menus/training_setup_menu.tscn"
 const LOBBY_BROWSER_SCENE := "res://scenes/multiplayer/lobby_browser.tscn"
@@ -43,7 +43,7 @@ func _ready() -> void:
     if game_state:
         game_state.set_state(game_state.State.MAIN_MENU)
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-    UIStyle.apply_theme(self)
+    UI_STYLE.apply_theme(self)
     _style_static_controls()
     _build_menu_buttons()
     _update_profile()

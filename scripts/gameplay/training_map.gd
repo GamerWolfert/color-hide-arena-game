@@ -18,8 +18,12 @@ func _build_large_training_map() -> void:
 	_make_zone("Warehouse", Vector3(8, 0, -9), Vector3(20, 5, 16), Color(0.58, 0.26, 0.50))
 	_make_zone("Office", Vector3(-17, 0, 11), Vector3(15, 4, 12), Color(0.32, 0.62, 0.36))
 	_make_zone("Garden", Vector3(14, 0, 12), Vector3(20, 3, 14), Color(0.20, 0.55, 0.32))
+	_make_zone("Storage", Vector3(23, 0, -4), Vector3(10, 4, 9), Color(0.68, 0.40, 0.22))
+	_make_zone("Workshop", Vector3(-5, 0, 10), Vector3(10, 4, 8), Color(0.28, 0.48, 0.68))
+	_make_zone("Kitchen", Vector3(2, 0, 15), Vector3(8, 3, 6), Color(0.72, 0.74, 0.78))
 	_make_corridor("MainCorridor", Vector3(-2, 1.6, 2), Vector3(42, 3.2, 3), Color(0.92, 0.70, 0.22))
 	_make_corridor("NorthHall", Vector3(-2, 1.6, -18), Vector3(48, 3.2, 3), Color(0.26, 0.58, 0.92))
+	_make_corridor("VentilationRun", Vector3(18, 1.6, 3), Vector3(3, 3.2, 16), Color(0.70, 0.34, 0.80))
 
 	for x in [-24, -12, 0, 12, 24]:
 		_make_box("OuterNorth%d" % x, Vector3(x, 2, -21), Vector3(10, 4, 0.5), Color(0.90, 0.26, 0.24))
@@ -57,6 +61,12 @@ func _make_props() -> void:
 		_make_pipe("Pipe%d" % i, Vector3(-6 + i * 4.0, 2.7, -18), Vector3(3.4, 0.28, 0.28), Color(0.72, 0.74, 0.70))
 	for i in range(5):
 		_make_box("DoorPanel%d" % i, Vector3(-24 + i * 12, 1.5, 2.1), Vector3(1.6, 3.0, 0.22), Color(0.20, 0.16, 0.10))
+	for i in range(4):
+		_make_box("StorageRack%d" % i, Vector3(20 + (i % 2) * 4.0, 1.3, -7 + int(i / 2) * 5.0), Vector3(2.8, 2.6, 0.55), Color(0.38, 0.24, 0.18))
+	for i in range(3):
+		_make_box("WorkshopBench%d" % i, Vector3(-8 + i * 3.0, 0.8, 8.4), Vector3(2.4, 0.35, 1.1), Color(0.20, 0.30, 0.36))
+	for i in range(3):
+		_make_box("KitchenCounter%d" % i, Vector3(-1.5 + i * 2.0, 0.85, 13.2), Vector3(1.7, 1.4, 0.6), Color(0.76, 0.78, 0.82))
 
 func _make_height_features() -> void:
 	_make_box("WarehouseMezzanine", Vector3(14, 2.0, -13), Vector3(9, 0.4, 5), Color(0.26, 0.28, 0.32))

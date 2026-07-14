@@ -1,6 +1,6 @@
 extends Control
 
-const UIStyle := preload("res://scripts/ui/ui_style.gd")
+const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 
 const TIPS := [
 	"Tip: kopieer een muurkleur voordat de seekerfase begint.",
@@ -15,7 +15,7 @@ func _ready() -> void:
 	var game_state = get_node_or_null("/root/GameState")
 	if game_state:
 		game_state.set_state(game_state.State.LOADING)
-	UIStyle.apply_theme(self)
+	UI_STYLE.apply_theme(self)
 	_build()
 	_start_loading()
 
@@ -37,7 +37,7 @@ func _build() -> void:
 	var title := Label.new()
 	title.text = "COLOR HIDE ARENA"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UIStyle.title(title, 40)
+	UI_STYLE.title(title, 40)
 	box.add_child(title)
 
 	var tip := Label.new()

@@ -1,6 +1,6 @@
 extends Control
 
-const UIStyle := preload("res://scripts/ui/ui_style.gd")
+const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 
 @export var screen_title := "Meccha Chameleon"
 @export_multiline var screen_body := "Dit scherm wordt voorbereid."
@@ -10,7 +10,7 @@ func _ready() -> void:
         call_deferred("_open_scene", "res://scenes/login_menu.tscn")
         return
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-    UIStyle.apply_theme(self)
+    UI_STYLE.apply_theme(self)
     _build()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -29,14 +29,14 @@ func _build() -> void:
     panel.offset_top = -170.0
     panel.offset_right = 270.0
     panel.offset_bottom = 170.0
-    panel.add_theme_stylebox_override("panel", UIStyle.panel(Color(0.04, 0.06, 0.11, 0.96), Color(0.22, 0.88, 0.80, 0.9)))
+    panel.add_theme_stylebox_override("panel", UI_STYLE.panel(Color(0.04, 0.06, 0.11, 0.96), Color(0.22, 0.88, 0.80, 0.9)))
     add_child(panel)
     var content := VBoxContainer.new()
     content.add_theme_constant_override("separation", 16)
     panel.add_child(content)
     var title := Label.new()
     title.text = screen_title
-    UIStyle.title(title, 34)
+    UI_STYLE.title(title, 34)
     content.add_child(title)
     var body := Label.new()
     body.text = screen_body
@@ -47,7 +47,7 @@ func _build() -> void:
     var back := Button.new()
     back.text = "Terug"
     back.custom_minimum_size = Vector2(170.0, 42.0)
-    back.add_theme_stylebox_override("normal", UIStyle.button())
+    back.add_theme_stylebox_override("normal", UI_STYLE.button())
     back.pressed.connect(func(): _open_scene("res://scenes/menus/main_menu.tscn"))
     content.add_child(back)
     back.grab_focus()

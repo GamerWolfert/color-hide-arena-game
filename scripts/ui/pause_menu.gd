@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-const UIStyle := preload("res://scripts/ui/ui_style.gd")
+const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 
 signal restart_requested
 
@@ -35,7 +35,7 @@ func _build() -> void:
 	panel.offset_top = -170
 	panel.offset_right = 190
 	panel.offset_bottom = 170
-	panel.add_theme_stylebox_override("panel", UIStyle.panel())
+	panel.add_theme_stylebox_override("panel", UI_STYLE.panel())
 	add_child(panel)
 
 	var box := VBoxContainer.new()
@@ -45,7 +45,7 @@ func _build() -> void:
 	var title := Label.new()
 	title.text = "Pauze"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UIStyle.title(title, 32)
+	UI_STYLE.title(title, 32)
 	box.add_child(title)
 
 	_add_button(box, "Doorgaan", toggle_pause)
@@ -57,7 +57,7 @@ func _add_button(parent: VBoxContainer, text: String, callback: Callable) -> voi
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(300, 44)
-	button.add_theme_stylebox_override("normal", UIStyle.button())
+	button.add_theme_stylebox_override("normal", UI_STYLE.button())
 	button.pressed.connect(callback)
 	parent.add_child(button)
 

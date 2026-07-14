@@ -1,10 +1,14 @@
 extends CharacterBody3D
 
+const PoseManagerScript := preload("res://scripts/characters/pose_manager.gd")
+
 signal role_changed(is_hider: bool)
 signal color_sampled(color: Color)
+signal eyedropper_previewed(color: Color, valid: bool)
 signal seeker_scanned(found: bool, target: Node, energy: float)
 signal camouflage_changed(percent: float, selected_part: String, pose_name: String)
 signal scanner_fired(hit: bool)
+signal pose_changed(pose_name: String)
 
 @export var walk_speed := 5.5
 @export var sprint_speed := 8.5
@@ -38,18 +42,26 @@ var body_parts := {}
 var last_surface_color := Color.WHITE
 var last_surface_distance := 99.0
 var last_frame_position := Vector3.ZERO
+var shadow_enabled := true
+var rotation_locked := false
+var pose_manager: Node
 var _pitch := deg_to_rad(-12.0)
 var _standing_height := 1.8
 var _crouching_height := 1.1
 var _scan_timer := 0.0
 var _part_names := ["Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg"]
-var _pose_names := ["Normaal", "Hurken", "Armen omhoog", "Leunen", "Plat tegen muur"]
+var _pose_names := PoseManagerScript.POSE_NAMES
 
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	ray.add_exception(self)
 	last_frame_position = global_position
 	_build_body_parts()
+	pose_manager = PoseManagerScript.new()
+	pose_manager.name = "PoseManager"
+	add_child(pose_manager)
+	pose_manager.setup(body_parts)
+	pose_manager.pose_changed.connect(_on_pose_changed)
 	apply_color(Color(0.82, 0.84, 0.78))
 	_apply_camera_settings()
 	var settings = get_node_or_null("/root/SettingsService")
@@ -60,14 +72,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if input_locked:
 		return
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		var sensitivity := _mouse_sensitivity()
-		_rotate_camera(-event.relative.x * sensitivity, -event.relative.y * sensitivity)
+		if not rotation_locked:
+			var sensitivity := _mouse_sensitivity()
+			_rotate_camera(-event.relative.x * sensitivity, -event.relative.y * sensitivity)
 	elif event.is_action_pressed("toggle_role"):
 		set_hider(not is_hider)
 	elif event.is_action_pressed("next_body_part"):
 		_select_next_part()
 	elif event.is_action_pressed("pose_next"):
 		_next_pose()
+	elif event.is_action_pressed("pose_previous"):
+		_previous_pose()
 	elif event.is_action_pressed("sample_color"):
 		sample_color()
 	elif event.is_action_pressed("paint_part"):
@@ -78,8 +93,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			paint_selected_part()
 		else:
 			scan()
+	elif event.is_action_pressed("scanner_primary") and not is_hider:
+		scan()
+	elif event.is_action_pressed("toggle_rotation_lock"):
+		rotation_locked = not rotation_locked
+	elif event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_set_zoom(spring_arm.spring_length - 0.35)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_set_zoom(spring_arm.spring_length + 0.35)
 
 func _physics_process(delta: float) -> void:
+	if Input.is_action_pressed("eyedropper") and is_hider:
+		_preview_surface_color()
 	if input_locked:
 		_slow_to_stop(delta)
 		move_and_slide()
@@ -129,16 +155,58 @@ func set_hider(value: bool) -> void:
 		apply_color(Color(0.95, 0.20, 0.20))
 	role_changed.emit(is_hider)
 
+func set_round_input_locked(value: bool) -> void:
+	input_locked = value
+
+func set_shadow_enabled(value: bool) -> void:
+	shadow_enabled = value
+	for part in body_parts.values():
+		part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow_enabled else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	body_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow_enabled else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
 func sample_color() -> void:
+	var sample := _read_surface_sample()
+	if not sample.is_empty():
+		sampled_color = sample.color
+		last_surface_color = sampled_color
+		last_surface_distance = sample.distance
+		color_sampled.emit(sampled_color)
+		eyedropper_previewed.emit(sampled_color, true)
+
+func _preview_surface_color() -> void:
+	var sample := _read_surface_sample()
+	if sample.is_empty():
+		eyedropper_previewed.emit(Color.WHITE, false)
+	else:
+		eyedropper_previewed.emit(sample.color, true)
+
+func _read_surface_sample() -> Dictionary:
 	ray.force_raycast_update()
-	if ray.is_colliding():
-		var collider := ray.get_collider()
-		if collider and collider.has_meta("surface_color"):
-			var color: Color = collider.get_meta("surface_color")
-			sampled_color = color
-			last_surface_color = color
-			last_surface_distance = global_position.distance_to(ray.get_collision_point())
-			color_sampled.emit(color)
+	if not ray.is_colliding():
+		return {}
+	var collider := ray.get_collider()
+	if not collider or collider == self:
+		return {}
+	var material_node: Node = collider
+	var color := Color.WHITE
+	while material_node:
+		if material_node.has_meta("transparent_surface") and bool(material_node.get_meta("transparent_surface")):
+			return {}
+		if material_node.has_meta("surface_color"):
+			color = material_node.get_meta("surface_color")
+			break
+		material_node = material_node.get_parent()
+	if color == Color.WHITE:
+		var mesh := collider as MeshInstance3D
+		if mesh:
+			var active_material := mesh.get_active_material(0)
+			if active_material is BaseMaterial3D:
+				if active_material.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+					return {}
+				color = active_material.albedo_color
+	if color == Color.WHITE and not collider.has_meta("surface_color"):
+		return {}
+	return {"color": color, "distance": ray.global_position.distance_to(ray.get_collision_point())}
 
 func scan() -> void:
 	if not scanner_ready or scanner_energy <= 0.0:
@@ -149,11 +217,7 @@ func scan() -> void:
 	ray.force_raycast_update()
 	var target: Node = ray.get_collider() if ray.is_colliding() else null
 	var found := false
-	if target and target.has_method("mark_found"):
-		target.mark_found()
-		found = true
-	elif target and target.is_in_group("hiders") and target.has_method("is_hidden_alive") and target.is_hidden_alive():
-		target.mark_found()
+	if target and target.is_in_group("hiders") and target.has_method("is_hidden_alive") and target.is_hidden_alive():
 		found = true
 	if not found:
 		scanner_energy = max(scanner_energy - 12.0, 0.0)
@@ -170,12 +234,42 @@ func apply_color(color: Color) -> void:
 	for part_name in body_parts.keys():
 		_set_part_color(part_name, color)
 
-func paint_selected_part() -> void:
+func paint_selected_part(color: Color = Color(-1, -1, -1, -1)) -> void:
 	if not is_hider:
 		return
 	var part_name: String = _part_names[selected_part_index]
-	_set_part_color(part_name, sampled_color)
+	var paint_color := sampled_color if color.r < 0.0 else color
+	_set_part_color(part_name, paint_color)
 	_update_camouflage()
+
+func set_body_part_style(part_name: String, color: Color, metallic := 0.0, roughness := 0.78) -> void:
+	if not body_parts.has(part_name):
+		return
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.metallic = clampf(metallic, 0.0, 1.0)
+	mat.roughness = clampf(roughness, 0.05, 1.0)
+	body_parts[part_name].material_override = mat
+	_update_camouflage()
+
+func get_body_part_color(part_name: String) -> Color:
+	var part: MeshInstance3D = body_parts.get(part_name)
+	if part and part.material_override is StandardMaterial3D:
+		return part.material_override.albedo_color
+	return Color.WHITE
+
+func get_body_part_names() -> Array[String]:
+	return _part_names.duplicate()
+
+func get_selected_part_name() -> String:
+	return _part_names[selected_part_index]
+
+func set_selected_part(part_name: String) -> void:
+	var index := _part_names.find(part_name)
+	if index >= 0:
+		selected_part_index = index
+		_highlight_selected_part()
+		_update_camouflage()
 
 func get_camouflage_percent() -> float:
 	return camouflage_percent
@@ -207,6 +301,8 @@ func _rotate_camera(yaw_delta: float, pitch_delta: float) -> void:
 	pitch_root.rotation.x = _pitch
 
 func _handle_controller_look(delta: float) -> void:
+	if rotation_locked:
+		return
 	var look := Vector2.ZERO
 	var input_service := get_node_or_null("/root/InputService")
 	if input_service:
@@ -236,8 +332,7 @@ func _apply_crouch(crouching: bool, delta: float) -> void:
 	body_mesh.scale.y = move_toward(body_mesh.scale.y, target_scale, 5.0 * delta)
 	yaw_root.position.y = move_toward(yaw_root.position.y, target_pitch_y, 5.0 * delta)
 	if crouching and pose_index == 0:
-		pose_index = 1
-		_apply_pose()
+		_set_pose(3)
 
 func _slow_to_stop(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, 0.0, deceleration * delta)
@@ -300,11 +395,29 @@ func _highlight_selected_part() -> void:
 			part.scale = Vector3.ONE * (1.08 if i == selected_part_index else 1.0)
 
 func _next_pose() -> void:
-	pose_index = (pose_index + 1) % _pose_names.size()
-	_apply_pose()
+	_set_pose(pose_index + 1)
+
+func _previous_pose() -> void:
+	_set_pose(pose_index - 1)
+
+func _set_pose(index: int) -> void:
+	if pose_manager:
+		pose_manager.set_pose(index)
+	else:
+		pose_index = posmod(index, _pose_names.size())
+		_apply_pose()
+	_update_camouflage()
+
+func _on_pose_changed(index: int, pose_name: String) -> void:
+	pose_index = index
+	pose_changed.emit(pose_name)
 	_update_camouflage()
 
 func _apply_pose() -> void:
+	if pose_manager:
+		pose_manager.pose_index = pose_index
+		pose_manager.apply_pose()
+		return
 	var left_arm: Node3D = body_parts.get("LeftArm")
 	var right_arm: Node3D = body_parts.get("RightArm")
 	var torso: Node3D = body_parts.get("Torso")
@@ -355,9 +468,17 @@ func _update_camouflage() -> void:
 	var distance_score: float = clamp(1.0 - last_surface_distance / 7.0, 0.0, 1.0)
 	var movement := global_position.distance_to(last_frame_position)
 	var movement_score: float = clamp(1.0 - movement * 25.0, 0.0, 1.0)
-	var pose_scores: Array[float] = [0.72, 0.84, 0.78, 0.88, 1.0]
+	var part_score := 0.0
+	for part in body_parts.values():
+		var part_material: StandardMaterial3D = part.material_override
+		var part_diff: float = abs(part_material.albedo_color.r - last_surface_color.r) + abs(part_material.albedo_color.g - last_surface_color.g) + abs(part_material.albedo_color.b - last_surface_color.b)
+		part_score += clampf(1.0 - part_diff / 3.0, 0.0, 1.0)
+	part_score /= max(body_parts.size(), 1)
+	var pose_scores: Array[float] = [0.72, 0.78, 0.82, 0.86, 0.84, 0.90, 0.88, 0.86, 0.89, 0.80]
 	var pose_score: float = pose_scores[pose_index]
-	camouflage_percent = round((color_score * 0.42 + distance_score * 0.24 + movement_score * 0.18 + pose_score * 0.16) * 100.0)
+	var visibility_score := clampf(1.0 - abs(global_position.y - 1.0) * 0.08, 0.70, 1.0)
+	var shadow_score := 1.0 if shadow_enabled else 0.96
+	camouflage_percent = round((color_score * 0.26 + part_score * 0.18 + distance_score * 0.18 + movement_score * 0.14 + pose_score * 0.14 + visibility_score * 0.06 + shadow_score * 0.04) * 100.0)
 	camouflage_changed.emit(camouflage_percent, _part_names[selected_part_index], _pose_names[pose_index])
 
 func _update_scanner(delta: float) -> void:
@@ -367,3 +488,6 @@ func _update_scanner(delta: float) -> void:
 			scanner_ready = true
 	if not is_hider:
 		scanner_energy = min(scanner_energy + 4.0 * delta, max_scanner_energy)
+
+func _set_zoom(value: float) -> void:
+	spring_arm.spring_length = clampf(value, 2.0, 7.0)

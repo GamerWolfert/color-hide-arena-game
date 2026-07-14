@@ -26,7 +26,9 @@ func _ready() -> void:
 
 func _add_mobile_controls_if_needed() -> void:
 	var device := get_node_or_null("/root/DeviceService")
-	if device == null or (not device.is_mobile() and not device.has_touchscreen()):
+	var settings := get_node_or_null("/root/SettingsService")
+	var force_mobile: bool = settings != null and settings.force_mobile_ui_on_desktop
+	if device == null or (not force_mobile and not device.is_mobile() and not device.has_touchscreen()):
 		return
 	var layer := CanvasLayer.new()
 	layer.name = "MobileControlsLayer"
@@ -37,7 +39,7 @@ func _add_mobile_controls_if_needed() -> void:
 
 func _spawn_bots() -> void:
 	var hide_spots: Array = training_map.get_hide_spots()
-	for i in range(3):
+	for i in range(4):
 		var bot := CharacterBody3D.new()
 		bot.name = "HiderBot%d" % (i + 1)
 		bot.script = HiderBotScript

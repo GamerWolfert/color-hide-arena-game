@@ -31,6 +31,9 @@ var touch_button_opacity := 0.78
 var touch_controls_position := "Standaard"
 var vibration_enabled := true
 var aim_assist_enabled := false
+var force_mobile_ui_on_desktop := false
+var debug_name_labels := false
+var debug_xray_enabled := false
 
 func _ready() -> void:
     load_settings()
@@ -82,6 +85,9 @@ func save_settings() -> void:
     config.set_value("mobile", "touch_controls_position", touch_controls_position)
     config.set_value("mobile", "vibration_enabled", vibration_enabled)
     config.set_value("mobile", "aim_assist_enabled", aim_assist_enabled)
+    config.set_value("mobile", "force_mobile_ui_on_desktop", force_mobile_ui_on_desktop)
+    config.set_value("developer", "debug_name_labels", debug_name_labels)
+    config.set_value("developer", "debug_xray_enabled", debug_xray_enabled)
     _save_keybinds(config)
     var error := config.save(SAVE_PATH)
     if error != OK:
@@ -145,6 +151,12 @@ func set_value(key: String, value: Variant, persist := true) -> void:
             vibration_enabled = bool(value)
         "aim_assist_enabled":
             aim_assist_enabled = bool(value)
+        "force_mobile_ui_on_desktop":
+            force_mobile_ui_on_desktop = bool(value)
+        "debug_name_labels":
+            debug_name_labels = bool(value)
+        "debug_xray_enabled":
+            debug_xray_enabled = bool(value)
         _:
             push_warning("Onbekende instelling: %s" % key)
             return
@@ -175,6 +187,9 @@ func restore_defaults() -> void:
     touch_controls_position = "Standaard"
     vibration_enabled = true
     aim_assist_enabled = false
+    force_mobile_ui_on_desktop = false
+    debug_name_labels = false
+    debug_xray_enabled = false
     var input_service := get_node_or_null("/root/InputService")
     if input_service:
         input_service.reset_bindings()
@@ -216,6 +231,9 @@ func _load_safe_values(config: ConfigFile) -> void:
     touch_controls_position = str(config.get_value("mobile", "touch_controls_position", "Standaard"))
     vibration_enabled = _safe_bool(config.get_value("mobile", "vibration_enabled", true), true)
     aim_assist_enabled = _safe_bool(config.get_value("mobile", "aim_assist_enabled", false), false)
+    force_mobile_ui_on_desktop = _safe_bool(config.get_value("mobile", "force_mobile_ui_on_desktop", false), false)
+    debug_name_labels = _safe_bool(config.get_value("developer", "debug_name_labels", false), false)
+    debug_xray_enabled = _safe_bool(config.get_value("developer", "debug_xray_enabled", false), false)
 
 func _save_keybinds(config: ConfigFile) -> void:
     var input_service := get_node_or_null("/root/InputService")
@@ -264,7 +282,7 @@ func _deserialize_event(data: Variant) -> InputEvent:
         return key
     if data.get("type", "") == "mouse":
         var mouse := InputEventMouseButton.new()
-        mouse.button_index = int(data.get("button", MOUSE_BUTTON_LEFT))
+        mouse.button_index = int(data.get("button", MOUSE_BUTTON_LEFT)) as MouseButton
         return mouse
     return null
 

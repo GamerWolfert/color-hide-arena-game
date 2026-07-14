@@ -1,6 +1,6 @@
 extends Control
 
-const UIStyle := preload("res://scripts/ui/ui_style.gd")
+const UI_STYLE := preload("res://scripts/ui/ui_style.gd")
 const TRAINING_SCENE := "res://scenes/gameplay/TrainingArena.tscn"
 
 var _transitioning := false
@@ -10,7 +10,7 @@ func _ready() -> void:
         call_deferred("_open_scene", "res://scenes/login_menu.tscn", false)
         return
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-    UIStyle.apply_theme(self)
+    UI_STYLE.apply_theme(self)
     _build()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -29,14 +29,14 @@ func _build() -> void:
     panel.offset_top = -180.0
     panel.offset_right = 280.0
     panel.offset_bottom = 180.0
-    panel.add_theme_stylebox_override("panel", UIStyle.panel(Color(0.04, 0.07, 0.11, 0.96), Color(0.18, 0.90, 0.78, 0.9)))
+    panel.add_theme_stylebox_override("panel", UI_STYLE.panel(Color(0.04, 0.07, 0.11, 0.96), Color(0.18, 0.90, 0.78, 0.9)))
     add_child(panel)
     var box := VBoxContainer.new()
     box.add_theme_constant_override("separation", 14)
     panel.add_child(box)
     var title := Label.new()
     title.text = "TRAINING"
-    UIStyle.title(title, 36)
+    UI_STYLE.title(title, 36)
     box.add_child(title)
     var description := Label.new()
     description.text = "Train offline in de kleurrijke arena. Leer kleuren kopieren, verstoppen en scannen."
@@ -52,8 +52,8 @@ func _button(text_value: String, callback: Callable) -> Button:
     var button := Button.new()
     button.text = text_value
     button.custom_minimum_size = Vector2(240.0, 46.0)
-    button.add_theme_stylebox_override("normal", UIStyle.button())
-    button.add_theme_stylebox_override("hover", UIStyle.button(Color(0.10, 0.20, 0.24), Color(0.62, 0.30, 0.95)))
+    button.add_theme_stylebox_override("normal", UI_STYLE.button())
+    button.add_theme_stylebox_override("hover", UI_STYLE.button(Color(0.10, 0.20, 0.24), Color(0.62, 0.30, 0.95)))
     button.pressed.connect(callback)
     return button
 
