@@ -80,6 +80,18 @@ func _ready() -> void:
 	if settings:
 		settings.settings_changed.connect(_apply_camera_settings)
 
+func _input(event: InputEvent) -> void:
+	if input_locked or rotation_locked:
+		return
+	if not event is InputEventMouseMotion or Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
+		return
+	var cursor := get_node_or_null("/root/CursorManager")
+	if cursor and cursor.is_ui_mode():
+		return
+	var sensitivity := _mouse_sensitivity()
+	_rotate_camera(-event.relative.x * sensitivity, -event.relative.y * sensitivity)
+	get_viewport().set_input_as_handled()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if input_locked:
 		return
@@ -89,11 +101,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_cursor_mode(0)
 			get_viewport().set_input_as_handled()
 			return
-	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		if not rotation_locked:
-			var sensitivity := _mouse_sensitivity()
-			_rotate_camera(-event.relative.x * sensitivity, -event.relative.y * sensitivity)
-	elif event.is_action_pressed("toggle_role"):
+	if event.is_action_pressed("toggle_role"):
 		set_hider(not is_hider)
 	elif event.is_action_pressed("next_body_part"):
 		_select_next_part()
@@ -419,8 +427,8 @@ func _slow_to_stop(delta: float) -> void:
 		velocity.y -= gravity * delta
 
 func _apply_camera_settings() -> void:
-	spring_arm.spring_length = maxf(spring_arm.spring_length, 5.6)
-	camera.fov = 62.0
+	spring_arm.spring_length = clampf(spring_arm.spring_length, 5.8, 7.0)
+	camera.fov = 60.0
 	camera.current = true
 
 func _mouse_sensitivity() -> float:
