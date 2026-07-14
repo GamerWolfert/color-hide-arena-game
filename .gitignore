@@ -31,5 +31,10 @@ Thumbs.db
 *.secret
 *.pem
 *.key
+*.keystore
+*.jks
+*.mobileprovision
+*.p12
+*.cer
 *service_role*
 *secret*

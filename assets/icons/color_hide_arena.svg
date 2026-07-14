@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07142d"/>
+      <stop offset="1" stop-color="#180b38"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#20f3d3"/>
+      <stop offset="1" stop-color="#8e3dff"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="52" fill="url(#bg)"/>
+  <circle cx="128" cy="128" r="82" fill="none" stroke="url(#ring)" stroke-width="16"/>
+  <circle cx="128" cy="88" r="24" fill="#f4f6f2"/>
+  <rect x="94" y="116" width="68" height="70" rx="28" fill="#f4f6f2"/>
+  <rect x="64" y="122" width="24" height="66" rx="12" fill="#20d8c1" transform="rotate(12 76 155)"/>
+  <rect x="168" y="122" width="24" height="66" rx="12" fill="#8e3dff" transform="rotate(-12 180 155)"/>
+  <rect x="101" y="178" width="22" height="50" rx="11" fill="#f4f6f2" transform="rotate(5 112 203)"/>
+  <rect x="133" y="178" width="22" height="50" rx="11" fill="#f4f6f2" transform="rotate(-5 144 203)"/>
+</svg>
