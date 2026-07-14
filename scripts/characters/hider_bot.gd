@@ -99,12 +99,13 @@ func get_camouflage_percent() -> float:
 	return camouflage_percent if hidden_alive else 0.0
 
 func _build_body() -> void:
-	_add_part("Torso", Vector3(0, 1.05, 0), Vector3(0.72, 0.90, 0.34))
-	_add_part("Head", Vector3(0, 1.70, 0), Vector3(0.42, 0.42, 0.42))
-	_add_part("LeftArm", Vector3(-0.55, 1.10, 0), Vector3(0.22, 0.82, 0.22))
-	_add_part("RightArm", Vector3(0.55, 1.10, 0), Vector3(0.22, 0.82, 0.22))
-	_add_part("LeftLeg", Vector3(-0.22, 0.42, 0), Vector3(0.26, 0.78, 0.26))
-	_add_part("RightLeg", Vector3(0.22, 0.42, 0), Vector3(0.26, 0.78, 0.26))
+	_add_part("Torso", Vector3(0, 1.05, 0), 0.38, 1.04, false)
+	_add_part("Head", Vector3(0, 1.76, 0), 0.36, 0.72, true)
+	_add_part("LeftArm", Vector3(-0.54, 1.12, 0), 0.14, 0.82, false)
+	_add_part("RightArm", Vector3(0.54, 1.12, 0), 0.14, 0.82, false)
+	_add_part("LeftLeg", Vector3(-0.22, 0.43, 0), 0.17, 0.88, false)
+	_add_part("RightLeg", Vector3(0.22, 0.43, 0), 0.17, 0.88, false)
+	_add_face_details()
 	pose_manager = PoseManagerScript.new()
 	pose_manager.name = "PoseManager"
 	add_child(pose_manager)
@@ -116,15 +117,39 @@ func _build_body() -> void:
 	col.shape = shape
 	add_child(col)
 
-func _add_part(part_name: String, pos: Vector3, size: Vector3) -> void:
+func _add_part(part_name: String, pos: Vector3, radius: float, height: float, sphere: bool) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = part_name
 	mesh.position = pos
-	var box := BoxMesh.new()
-	box.size = size
-	mesh.mesh = box
+	if sphere:
+		var sphere_mesh := SphereMesh.new()
+		sphere_mesh.radius = radius
+		sphere_mesh.height = height
+		mesh.mesh = sphere_mesh
+	else:
+		var capsule := CapsuleMesh.new()
+		capsule.radius = radius
+		capsule.height = height
+		mesh.mesh = capsule
 	add_child(mesh)
 	body_parts[part_name] = mesh
+
+func _add_face_details() -> void:
+	var visor := MeshInstance3D.new()
+	visor.name = "FaceVisor"
+	var visor_mesh := SphereMesh.new()
+	visor_mesh.radius = 0.20
+	visor_mesh.height = 0.26
+	visor.mesh = visor_mesh
+	visor.position = Vector3(0.0, 1.78, -0.31)
+	visor.scale = Vector3(1.0, 0.72, 0.24)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.04, 0.18, 0.22)
+	material.emission_enabled = true
+	material.emission = Color(0.04, 0.55, 0.52)
+	material.emission_energy_multiplier = 1.4
+	visor.material_override = material
+	add_child(visor)
 
 func _paint_all(color: Color) -> void:
 	for part in body_parts.values():

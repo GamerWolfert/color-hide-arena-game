@@ -38,7 +38,10 @@ var round_number := 0
 var _started := false
 
 func _ready() -> void:
-	timer.timeout.connect(_on_timer_timeout)
+	timer.wait_time = 1.0
+	timer.one_shot = false
+	if not timer.timeout.is_connected(_on_timer_timeout):
+		timer.timeout.connect(_on_timer_timeout)
 	call_deferred("start_round")
 
 func set_hiders(next_hiders: Array) -> void:
@@ -60,6 +63,7 @@ func start_round() -> void:
 		return
 	_started = true
 	round_number += 1
+	timer.stop()
 	_reset_players()
 	_refresh_hider_count()
 	hider_count_changed.emit(remaining_hiders, total_hiders)
@@ -139,7 +143,7 @@ func _set_state(new_state: RoundState, duration: int, message: String) -> void:
 	timer_changed.emit(seconds_left)
 	round_message.emit(message)
 	if duration > 0:
-		timer.start(duration)
+		timer.start()
 
 func _phase_name() -> String:
 	return phase_name

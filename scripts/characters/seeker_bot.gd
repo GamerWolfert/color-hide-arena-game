@@ -122,19 +122,52 @@ func _has_line_of_sight(target: Node3D) -> bool:
 	return result.get("collider") == target
 
 func _build_body() -> void:
-	var mesh := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(0.72, 1.65, 0.42)
-	mesh.position = Vector3(0, 0.82, 0)
-	mesh.mesh = box
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.95, 0.18, 0.22)
-	mat.roughness = 0.75
-	mesh.material_override = mat
-	add_child(mesh)
+	_add_part("Torso", Vector3(0, 1.05, 0), 0.38, 1.04, false)
+	_add_part("Head", Vector3(0, 1.76, 0), 0.36, 0.72, true)
+	_add_part("LeftArm", Vector3(-0.54, 1.12, 0), 0.14, 0.82, false)
+	_add_part("RightArm", Vector3(0.54, 1.12, 0), 0.14, 0.82, false)
+	_add_part("LeftLeg", Vector3(-0.22, 0.43, 0), 0.17, 0.88, false)
+	_add_part("RightLeg", Vector3(0.22, 0.43, 0), 0.17, 0.88, false)
+	var visor := MeshInstance3D.new()
+	visor.name = "ScannerVisor"
+	var visor_mesh := SphereMesh.new()
+	visor_mesh.radius = 0.20
+	visor_mesh.height = 0.26
+	visor.mesh = visor_mesh
+	visor.position = Vector3(0.0, 1.78, -0.31)
+	visor.scale = Vector3(1.0, 0.72, 0.24)
+	var visor_material := StandardMaterial3D.new()
+	visor_material.albedo_color = Color(0.18, 0.035, 0.05)
+	visor_material.emission_enabled = true
+	visor_material.emission = Color(0.9, 0.06, 0.08)
+	visor_material.emission_energy_multiplier = 1.5
+	visor.material_override = visor_material
+	add_child(visor)
+	for part in get_children():
+		if part is MeshInstance3D and part.name != "ScannerVisor":
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = Color(0.86, 0.16, 0.22)
+			mat.roughness = 0.62
+			part.material_override = mat
 	var col := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
 	shape.radius = 0.45
 	shape.height = 1.8
 	col.shape = shape
 	add_child(col)
+
+func _add_part(part_name: String, pos: Vector3, radius: float, height: float, sphere: bool) -> void:
+	var mesh := MeshInstance3D.new()
+	mesh.name = part_name
+	mesh.position = pos
+	if sphere:
+		var sphere_mesh := SphereMesh.new()
+		sphere_mesh.radius = radius
+		sphere_mesh.height = height
+		mesh.mesh = sphere_mesh
+	else:
+		var capsule := CapsuleMesh.new()
+		capsule.radius = radius
+		capsule.height = height
+		mesh.mesh = capsule
+	add_child(mesh)

@@ -79,6 +79,12 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if input_locked:
 		return
+	if event is InputEventMouseButton and event.pressed and Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
+		var pause_menu := get_node_or_null("../PauseMenu")
+		if pause_menu == null or not pause_menu.visible:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		if not rotation_locked:
 			var sensitivity := _mouse_sensitivity()
@@ -397,7 +403,9 @@ func _apply_crouch(crouching: bool, delta: float) -> void:
 	body_mesh.scale.y = move_toward(body_mesh.scale.y, target_scale, 5.0 * delta)
 	yaw_root.position.y = move_toward(yaw_root.position.y, target_pitch_y, 5.0 * delta)
 	if crouching and pose_index == 0:
-		_set_pose(3)
+		_set_pose(1)
+	elif not crouching and pose_index == 1:
+		_set_pose(0)
 
 func _slow_to_stop(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, 0.0, deceleration * delta)
@@ -420,25 +428,65 @@ func _build_body_parts() -> void:
 	var root := Node3D.new()
 	root.name = "BodyParts"
 	add_child(root)
-	_add_part(root, "Torso", Vector3(0, 1.05, 0), Vector3(0.72, 0.90, 0.34), Color(0.82, 0.84, 0.78))
-	_add_part(root, "Head", Vector3(0, 1.70, 0), Vector3(0.42, 0.42, 0.42), Color(0.82, 0.84, 0.78))
-	_add_part(root, "LeftArm", Vector3(-0.55, 1.10, 0), Vector3(0.22, 0.82, 0.22), Color(0.82, 0.84, 0.78))
-	_add_part(root, "RightArm", Vector3(0.55, 1.10, 0), Vector3(0.22, 0.82, 0.22), Color(0.82, 0.84, 0.78))
-	_add_part(root, "LeftLeg", Vector3(-0.22, 0.42, 0), Vector3(0.26, 0.78, 0.26), Color(0.82, 0.84, 0.78))
-	_add_part(root, "RightLeg", Vector3(0.22, 0.42, 0), Vector3(0.26, 0.78, 0.26), Color(0.82, 0.84, 0.78))
+	_add_part(root, "Torso", Vector3(0, 1.05, 0), Color(0.82, 0.84, 0.78), 0.38, 1.04)
+	_add_part(root, "Head", Vector3(0, 1.76, 0), Color(0.82, 0.84, 0.78), 0.36, 0.72, true)
+	_add_part(root, "LeftArm", Vector3(-0.54, 1.12, 0), Color(0.82, 0.84, 0.78), 0.14, 0.82)
+	_add_part(root, "RightArm", Vector3(0.54, 1.12, 0), Color(0.82, 0.84, 0.78), 0.14, 0.82)
+	_add_part(root, "LeftLeg", Vector3(-0.22, 0.43, 0), Color(0.82, 0.84, 0.78), 0.17, 0.88)
+	_add_part(root, "RightLeg", Vector3(0.22, 0.43, 0), Color(0.82, 0.84, 0.78), 0.17, 0.88)
+	_add_face_details(root)
 	_highlight_selected_part()
 
-func _add_part(root: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color) -> void:
+func _add_part(root: Node3D, part_name: String, pos: Vector3, color: Color, radius: float, height: float, sphere := false) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = part_name
 	mesh.position = pos
-	var box := BoxMesh.new()
-	box.size = size
-	mesh.mesh = box
+	if sphere:
+		var sphere_mesh := SphereMesh.new()
+		sphere_mesh.radius = radius
+		sphere_mesh.height = height
+		mesh.mesh = sphere_mesh
+	else:
+		var capsule := CapsuleMesh.new()
+		capsule.radius = radius
+		capsule.height = height
+		mesh.mesh = capsule
 	mesh.set_meta("body_part", part_name)
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	root.add_child(mesh)
 	body_parts[part_name] = mesh
 	_set_part_color(part_name, color)
+
+func _add_face_details(root: Node3D) -> void:
+	var visor := MeshInstance3D.new()
+	visor.name = "FaceVisor"
+	var visor_mesh := SphereMesh.new()
+	visor_mesh.radius = 0.20
+	visor_mesh.height = 0.26
+	visor.mesh = visor_mesh
+	visor.position = Vector3(0.0, 1.78, -0.31)
+	visor.scale = Vector3(1.0, 0.72, 0.24)
+	var visor_material := StandardMaterial3D.new()
+	visor_material.albedo_color = Color(0.04, 0.18, 0.22)
+	visor_material.emission_enabled = true
+	visor_material.emission = Color(0.04, 0.55, 0.52)
+	visor_material.emission_energy_multiplier = 1.5
+	visor.material_override = visor_material
+	root.add_child(visor)
+	for side in [-1.0, 1.0]:
+		var shoulder := MeshInstance3D.new()
+		shoulder.name = "Shoulder%s" % ("L" if side < 0.0 else "R")
+		var shoulder_mesh := SphereMesh.new()
+		shoulder_mesh.radius = 0.18
+		shoulder_mesh.height = 0.30
+		shoulder.mesh = shoulder_mesh
+		shoulder.position = Vector3(side * 0.40, 1.42, 0.0)
+		shoulder.scale = Vector3(1.0, 0.72, 0.82)
+		var shoulder_material := StandardMaterial3D.new()
+		shoulder_material.albedo_color = Color(0.08, 0.48, 0.48)
+		shoulder_material.roughness = 0.52
+		shoulder.material_override = shoulder_material
+		root.add_child(shoulder)
 
 func _set_part_color(part_name: String, color: Color) -> void:
 	if not body_parts.has(part_name):

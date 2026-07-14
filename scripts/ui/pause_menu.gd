@@ -22,9 +22,14 @@ func toggle_pause() -> void:
 	if game_state:
 		game_state.set_state(game_state.State.PAUSED if visible else game_state.previous_state)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if visible else Input.MOUSE_MODE_CAPTURED)
+	var input_service := get_node_or_null("/root/InputService")
+	if input_service:
+		input_service.set_touch_input_blocked(visible)
+	get_viewport().set_input_as_handled()
 
 func _build() -> void:
 	var dim := ColorRect.new()
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	dim.color = Color(0, 0, 0, 0.48)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)

@@ -3,16 +3,12 @@ extends Node
 signal pose_changed(index: int, pose_name: String)
 
 const POSE_NAMES := [
-    "Normaal staan",
-    "Zwaaien",
-    "Armen omhoog",
-    "Hurken",
-    "Zitten",
-    "Plat op de rug",
-    "Plat op de buik",
-    "Voorover buigen",
-    "Leunen",
-    "Smalle stand"
+	"Normaal staan",
+	"Hurken",
+	"Armen omhoog",
+	"Leunen",
+	"Plat tegen muur",
+	"Zitten"
 ]
 
 var pose_index := 0
@@ -55,11 +51,11 @@ func apply_pose() -> void:
         return
     var defaults := {
         "Torso": [Vector3(0, 1.05, 0), Vector3.ONE],
-        "Head": [Vector3(0, 1.70, 0), Vector3.ONE],
-        "LeftArm": [Vector3(-0.55, 1.10, 0), Vector3.ONE],
-        "RightArm": [Vector3(0.55, 1.10, 0), Vector3.ONE],
-        "LeftLeg": [Vector3(-0.22, 0.42, 0), Vector3.ONE],
-        "RightLeg": [Vector3(0.22, 0.42, 0), Vector3.ONE]
+        "Head": [Vector3(0, 1.76, 0), Vector3.ONE],
+        "LeftArm": [Vector3(-0.54, 1.12, 0), Vector3.ONE],
+        "RightArm": [Vector3(0.54, 1.12, 0), Vector3.ONE],
+        "LeftLeg": [Vector3(-0.22, 0.43, 0), Vector3.ONE],
+        "RightLeg": [Vector3(0.22, 0.43, 0), Vector3.ONE]
     }
     for part_name in defaults:
         var part: Node3D = body_parts.get(part_name)
@@ -68,52 +64,32 @@ func apply_pose() -> void:
         part.scale = defaults[part_name][1]
     match pose_index:
         1:
-            left_arm.rotation.z = deg_to_rad(-48.0)
-            left_arm.rotation.x = deg_to_rad(-8.0)
-            right_arm.position.y = 1.34
-            left_arm.position.y = 1.34
+            torso.scale.y = 0.78
+            head.position.y = 1.46
+            left_arm.position.y = 0.98
+            right_arm.position.y = 0.98
+            left_leg.rotation.x = deg_to_rad(-18.0)
+            right_leg.rotation.x = deg_to_rad(18.0)
         2:
-            left_arm.rotation.z = deg_to_rad(-38.0)
-            right_arm.rotation.z = deg_to_rad(38.0)
+            left_arm.rotation.z = deg_to_rad(-54.0)
+            right_arm.rotation.z = deg_to_rad(54.0)
             left_arm.position.y = 1.48
             right_arm.position.y = 1.48
         3:
-            torso.scale.y = 0.78
-            head.position.y = 1.45
-            left_leg.position.y = 0.32
-            right_leg.position.y = 0.32
-        4:
-            torso.rotation.x = deg_to_rad(-18.0)
-            torso.position.y = 0.92
-            head.position = Vector3(0, 1.44, 0.24)
-            left_leg.rotation.x = deg_to_rad(72.0)
-            right_leg.rotation.x = deg_to_rad(72.0)
-        5:
-            torso.rotation.x = deg_to_rad(82.0)
-            torso.position.y = 0.56
-            head.position = Vector3(0, 0.9, -0.28)
-            left_arm.position = Vector3(-0.55, 0.78, -0.12)
-            right_arm.position = Vector3(0.55, 0.78, -0.12)
-        6:
-            torso.rotation.x = deg_to_rad(-82.0)
-            torso.position.y = 0.56
-            head.position = Vector3(0, 0.9, 0.28)
-            left_arm.position = Vector3(-0.55, 0.78, 0.12)
-            right_arm.position = Vector3(0.55, 0.78, 0.12)
-        7:
-            torso.rotation.x = deg_to_rad(-28.0)
-            torso.position.y = 1.0
-            head.position = Vector3(0, 1.57, 0.18)
-            left_arm.rotation.x = deg_to_rad(-18.0)
-            right_arm.rotation.x = deg_to_rad(-18.0)
-        8:
             torso.rotation.z = deg_to_rad(13.0)
             head.rotation.z = deg_to_rad(13.0)
-            left_arm.rotation.z = deg_to_rad(8.0)
-            right_arm.rotation.z = deg_to_rad(8.0)
-        9:
-            left_leg.position.x = -0.14
-            right_leg.position.x = 0.14
-            left_leg.scale.x = 0.82
-            right_leg.scale.x = 0.82
-
+            left_arm.rotation.z = deg_to_rad(10.0)
+            right_arm.rotation.z = deg_to_rad(4.0)
+            left_leg.rotation.z = deg_to_rad(-8.0)
+        4:
+            torso.rotation.x = deg_to_rad(-72.0)
+            torso.position = Vector3(0, 0.88, -0.12)
+            head.position = Vector3(0, 1.02, -0.42)
+            left_arm.position = Vector3(-0.46, 0.98, -0.16)
+            right_arm.position = Vector3(0.46, 0.98, -0.16)
+        5:
+            torso.rotation.x = deg_to_rad(-22.0)
+            torso.position.y = 0.92
+            head.position = Vector3(0, 1.43, 0.20)
+            left_leg.rotation.x = deg_to_rad(62.0)
+            right_leg.rotation.x = deg_to_rad(62.0)

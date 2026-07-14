@@ -78,10 +78,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build() -> void:
     panel = PanelContainer.new()
     panel.set_anchors_preset(Control.PRESET_CENTER)
-    panel.offset_left = -280
-    panel.offset_top = -250
-    panel.offset_right = 280
-    panel.offset_bottom = 250
+    panel.offset_left = -230
+    panel.offset_top = -200
+    panel.offset_right = 230
+    panel.offset_bottom = 200
+    panel.mouse_filter = Control.MOUSE_FILTER_STOP
     panel.add_theme_stylebox_override("panel", UI_STYLE.panel(Color(0.025, 0.045, 0.09, 0.97), Color(0.18, 0.86, 0.82, 0.95)))
     add_child(panel)
     var outer := VBoxContainer.new()
@@ -185,13 +186,13 @@ func _slider(label_text: String, minimum: float, maximum: float, value: float) -
     slider.max_value = maximum
     slider.value = value
     slider.tooltip_text = label_text
-    slider.custom_minimum_size = Vector2(420, 24)
+    slider.custom_minimum_size = Vector2(350, 20)
     return slider
 
 func _button(text: String, callback: Callable) -> Button:
     var button := Button.new()
     button.text = text
-    button.custom_minimum_size = Vector2(130, 42)
+    button.custom_minimum_size = Vector2(108, 38)
     button.add_theme_stylebox_override("normal", UI_STYLE.button(Color(0.06, 0.13, 0.18, 0.96), Color(0.55, 0.25, 0.92, 0.90)))
     button.pressed.connect(callback)
     return button
