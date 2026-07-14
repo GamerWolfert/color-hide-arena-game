@@ -80,6 +80,10 @@ func register_peer(peer_id: int) -> void:
 	}
 	if authoritative:
 		_assign_roles()
+		if phase == "WAITING" and _has_minimum_players():
+			_set_phase("WAITING", "Wachten op spelers")
+		else:
+			_emit_counts()
 
 func remove_peer(peer_id: int) -> void:
 	players.erase(peer_id)
@@ -88,6 +92,8 @@ func remove_peer(peer_id: int) -> void:
 			_avatars[peer_id].queue_free()
 		_avatars.erase(peer_id)
 	_emit_counts()
+	if authoritative and not _has_minimum_players():
+		_set_phase("WAITING", "Wachten op spelers")
 
 func send_hello() -> void:
 	if network and not network.is_server:
@@ -171,7 +177,8 @@ func _process(delta: float) -> void:
 		seconds_left = maxi(seconds_left - 1, 0)
 		timer_changed.emit(seconds_left)
 		if seconds_left == 0:
-			_advance_phase()
+			if phase != "WAITING" or _has_minimum_players():
+				_advance_phase()
 	if _snapshot_accumulator >= 0.05:
 		_snapshot_accumulator = 0.0
 		_broadcast_snapshot()
@@ -191,6 +198,9 @@ func _start_round() -> void:
 func _advance_phase() -> void:
 	match phase:
 		"WAITING":
+			if not _has_minimum_players():
+				_set_phase("WAITING", "Wachten op spelers")
+				return
 			_set_phase("ROLE_ASSIGNMENT", "Rollen worden verdeeld")
 		"ROLE_ASSIGNMENT":
 			_assign_roles()
@@ -219,12 +229,18 @@ func _assign_roles() -> void:
 func _set_phase(next_phase: String, message: String) -> void:
 	phase = next_phase
 	seconds_left = int(PHASE_DURATIONS.get(phase, 0))
+	if phase == "WAITING" and not _has_minimum_players():
+		seconds_left = 0
+		message = "Wachten op spelers\nMinimaal 1 Hider en 1 Seeker nodig"
 	print("MATCH_PHASE phase=%s seconds=%d" % [phase, seconds_left])
 	phase_changed.emit(phase, seconds_left)
 	timer_changed.emit(seconds_left)
 	state_changed.emit(phase)
 	round_message.emit(message)
 	_broadcast_snapshot()
+
+func _has_minimum_players() -> bool:
+	return players.size() >= 2
 
 func _finish_round(winner: String) -> void:
 	_set_phase("RESULTS", "%s wint de ronde" % winner)

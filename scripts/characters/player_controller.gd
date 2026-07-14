@@ -51,6 +51,7 @@ var rotation_locked := false
 var pose_manager: Node
 var mobile_crouching := false
 var mobile_eyedropper := false
+var hidden_alive := true
 var scanner_mesh: MeshInstance3D
 var _pitch := deg_to_rad(-12.0)
 var _standing_height := 1.8
@@ -178,6 +179,7 @@ func reset_to_spawn(spawn_transform: Transform3D, hider: bool) -> void:
 
 func set_hider(value: bool) -> void:
 	is_hider = value
+	hidden_alive = value
 	scanner_energy = max_scanner_energy
 	if is_hider:
 		apply_color(Color(0.82, 0.84, 0.78))
@@ -186,6 +188,22 @@ func set_hider(value: bool) -> void:
 	if scanner_mesh:
 		scanner_mesh.visible = not is_hider
 	role_changed.emit(is_hider)
+
+func is_hidden_alive() -> bool:
+	return hidden_alive and is_hider
+
+func mark_found() -> void:
+	if not is_hidden_alive():
+		return
+	hidden_alive = false
+	visible = false
+
+func convert_to_seeker() -> void:
+	if not is_hidden_alive():
+		return
+	hidden_alive = false
+	visible = true
+	set_hider(false)
 
 func jump() -> void:
 	if not input_locked and is_on_floor() and not (Input.is_action_pressed("crouch") or mobile_crouching):

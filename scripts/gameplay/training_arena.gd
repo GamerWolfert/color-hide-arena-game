@@ -5,6 +5,10 @@ const SeekerBotScript := preload("res://scripts/characters/seeker_bot.gd")
 const MobileControlsScript := preload("res://scripts/input/mobile_controls.gd")
 const DebugVisualsScript := preload("res://scripts/ui/debug_visuals.gd")
 
+@export_range(0, 8, 1) var hider_bot_count := 0
+@export_range(0, 8, 1) var seeker_bot_count := 1
+@export_enum("Hider", "Seeker", "Random") var player_role := "Hider"
+
 @onready var player := $Player
 @onready var hud := $HUD
 @onready var pause_menu := $PauseMenu
@@ -25,6 +29,8 @@ func _ready() -> void:
 	_add_mobile_controls_if_needed()
 	if round_manager.has_method("set_network_authoritative"):
 		round_manager.set_network_authoritative(networked)
+	if round_manager.has_method("set_training_configuration"):
+		round_manager.set_training_configuration(player_role)
 	if not networked:
 		_spawn_bots()
 	hud.bind_player(player)
@@ -58,7 +64,7 @@ func _add_mobile_controls_if_needed() -> void:
 
 func _spawn_bots() -> void:
 	var hide_spots: Array = training_map.get_hide_spots()
-	for i in range(4):
+	for i in range(hider_bot_count):
 		var bot := CharacterBody3D.new()
 		bot.name = "HiderBot%d" % (i + 1)
 		bot.script = HiderBotScript
@@ -66,13 +72,17 @@ func _spawn_bots() -> void:
 		bot.setup(hide_spots, i)
 		hider_bots.append(bot)
 	var patrol_points: Array = training_map.get_patrol_points()
-	var seeker := CharacterBody3D.new()
-	seeker.name = "SeekerBot"
-	seeker.script = SeekerBotScript
-	add_child(seeker)
-	seeker.setup(patrol_points, hider_bots)
-	seeker.bot_found_hider.connect(func(target): round_manager.register_scan(true, target, 100.0))
-	seeker_bots.append(seeker)
+	for i in range(seeker_bot_count):
+		var seeker := CharacterBody3D.new()
+		seeker.name = "SeekerBot%d" % (i + 1)
+		seeker.script = SeekerBotScript
+		add_child(seeker)
+		var scan_targets: Array = hider_bots.duplicate()
+		if player_role != "Seeker":
+			scan_targets.append(player)
+		seeker.setup(patrol_points, scan_targets)
+		seeker.bot_found_hider.connect(func(target): round_manager.register_scan(true, target, 100.0))
+		seeker_bots.append(seeker)
 	round_manager.set_hiders(hider_bots)
 	round_manager.set_seekers(seeker_bots)
 	if OS.is_debug_build():

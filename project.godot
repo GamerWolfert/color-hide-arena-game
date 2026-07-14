@@ -20,6 +20,7 @@ config/features=PackedStringArray("4.7")
 GameState="*res://scripts/core/game_state.gd"
 DeviceService="*res://scripts/services/device_service.gd"
 InputService="*res://scripts/input/input_service.gd"
+MatchRoster="*res://scripts/gameplay/match_roster.gd"
 SettingsService="*res://scripts/services/settings_service.gd"
 CursorManager="*res://scripts/services/cursor_manager.gd"
 SessionHistoryService="*res://scripts/services/session_history_service.gd"

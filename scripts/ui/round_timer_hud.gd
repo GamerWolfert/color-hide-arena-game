@@ -61,10 +61,21 @@ func _build_labels() -> void:
 func _draw() -> void:
 	var center := Vector2(size.x * 0.5, 22.0)
 	draw_style_box(_panel_style(Color(0.02, 0.035, 0.075, 0.68), Color(0.16, 0.72, 0.76, 0.52)), Rect2(center.x - 190.0, 8.0, 380.0, 90.0))
-	for index in range(3):
-		_draw_humanoid(center + Vector2(-124.0 + index * 28.0, 10.0), Color(0.92, 0.94, 0.90))
+	_draw_team_icons(center, _hiders, Color(0.92, 0.94, 0.90), -1.0)
 	_draw_hourglass(center + Vector2(0, 11.0))
-	_draw_humanoid(center + Vector2(124.0, 10.0), Color(0.92, 0.18, 0.24))
+	_draw_team_icons(center, _seekers, Color(0.92, 0.18, 0.24), 1.0)
+
+func _draw_team_icons(center: Vector2, count: int, color: Color, side: float) -> void:
+	var visible_count := mini(count, 8)
+	var gap := 22.0
+	var start_x := center.x + side * (24.0 + (visible_count - 1) * gap * 0.5)
+	if side < 0.0:
+		start_x -= (visible_count - 1) * gap
+	for index in range(visible_count):
+		_draw_humanoid(Vector2(start_x + index * gap, center.y + 10.0), color)
+	if count > visible_count:
+		var font := ThemeDB.fallback_font
+		draw_string(font, Vector2(start_x + side * (visible_count * gap + 2.0), center.y + 14.0), "x%d" % count, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, color)
 
 func _draw_humanoid(center: Vector2, color: Color) -> void:
 	draw_circle(center + Vector2(0, -5), 4.0, color)

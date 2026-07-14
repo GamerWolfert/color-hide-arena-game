@@ -12,6 +12,7 @@ signal hider_count_changed(remaining: int, total: int)
 signal role_counts_changed(hiders: int, seekers: int)
 signal state_changed(state: RoundState)
 signal roles_assigned
+signal roster_changed
 
 @export var waiting_time := 3
 @export var role_assignment_time := 2
@@ -21,6 +22,7 @@ signal roles_assigned
 @export var restarting_time := 2
 @export_enum("Infection", "Classic") var round_mode := "Infection"
 @export var allow_shadow_toggle := true
+@export_enum("Hider", "Seeker", "Random") var player_role := "Hider"
 
 @onready var timer: Timer = $Timer
 @onready var player: CharacterBody3D = $"../Player"
@@ -43,7 +45,14 @@ func _ready() -> void:
 	timer.one_shot = false
 	if not timer.timeout.is_connected(_on_timer_timeout):
 		timer.timeout.connect(_on_timer_timeout)
+	var roster := _roster()
+	if roster and not roster.roster_changed.is_connected(_on_roster_changed):
+		roster.roster_changed.connect(_on_roster_changed)
 	call_deferred("start_round")
+
+func set_training_configuration(next_player_role: String) -> void:
+	if next_player_role in ["Hider", "Seeker", "Random"]:
+		player_role = next_player_role
 
 func set_hiders(next_hiders: Array) -> void:
 	hiders = next_hiders
@@ -53,10 +62,12 @@ func set_hiders(next_hiders: Array) -> void:
 		if hider.has_signal("found") and not hider.found.is_connected(_on_hider_found):
 				hider.found.connect(_on_hider_found)
 	hider_count_changed.emit(remaining_hiders, total_hiders)
+	_refresh_roster_after_participants_changed()
 	_emit_role_counts()
 
 func set_seekers(next_seekers: Array) -> void:
 	seekers = next_seekers
+	_refresh_roster_after_participants_changed()
 	_emit_role_counts()
 
 func start_round() -> void:
@@ -65,6 +76,7 @@ func start_round() -> void:
 	_started = true
 	round_number += 1
 	timer.stop()
+	_sync_roster()
 	_reset_players()
 	_refresh_hider_count()
 	hider_count_changed.emit(remaining_hiders, total_hiders)
@@ -96,6 +108,13 @@ func register_scan(found: bool, target: Node = null, _energy: float = 0.0) -> vo
 	else:
 		if target.has_method("mark_found"):
 			target.mark_found()
+	var roster := _roster()
+	if roster:
+		var participant_id: String = roster.get_id_for_node(target)
+		if not participant_id.is_empty():
+			roster.set_found(participant_id, true)
+			if round_mode == "Infection":
+				roster.set_role(participant_id, "SEEKER")
 	_refresh_hider_count()
 	hider_count_changed.emit(remaining_hiders, total_hiders)
 	_emit_role_counts()
@@ -110,6 +129,9 @@ func _on_timer_timeout() -> void:
 		return
 	match state:
 		RoundState.WAITING:
+			if not _has_valid_participants():
+				_set_state(RoundState.WAITING, 0, "Wachten op spelers\nMinimaal 1 Hider en 1 Seeker nodig")
+				return
 			_set_state(RoundState.ROLE_ASSIGNMENT, role_assignment_time, "Rollen worden verdeeld")
 		RoundState.ROLE_ASSIGNMENT:
 			_assign_roles()
@@ -138,7 +160,11 @@ func _finish_round(winner: String) -> void:
 
 func _set_state(new_state: RoundState, duration: int, message: String) -> void:
 	state = new_state
-	seconds_left = duration
+	var resolved_duration := duration
+	if new_state == RoundState.WAITING and not _has_valid_participants():
+		resolved_duration = 0
+		message = "Wachten op spelers\nMinimaal 1 Hider en 1 Seeker nodig"
+	seconds_left = resolved_duration
 	phase_name = _state_name()
 	var game_state = get_node_or_null("/root/GameState")
 	if game_state:
@@ -150,7 +176,7 @@ func _set_state(new_state: RoundState, duration: int, message: String) -> void:
 	phase_changed.emit(phase_name, seconds_left)
 	timer_changed.emit(seconds_left)
 	round_message.emit(message)
-	if duration > 0:
+	if resolved_duration > 0:
 		timer.start()
 
 func _phase_name() -> String:
@@ -191,17 +217,28 @@ func _game_state_for_round_state() -> GameStateScript.State:
 			return GameStateScript.State.PREPARATION
 
 func _assign_roles() -> void:
+	var human_is_hider := _human_is_hider()
 	if player.has_method("set_hider"):
-		player.set_hider(true)
+		player.set_hider(human_is_hider)
 	if player.has_method("set_shadow_policy"):
 		player.set_shadow_policy(allow_shadow_toggle)
 	if player.has_method("set_round_input_locked"):
 		player.set_round_input_locked(true)
+	var roster := _roster()
+	if roster:
+		var player_id: String = roster.get_id_for_node(player)
+		if not player_id.is_empty():
+			roster.set_role(player_id, "HIDER" if human_is_hider else "SEEKER")
+			roster.set_found(player_id, false)
+			roster.begin_round()
+			_emit_role_counts()
 	roles_assigned.emit()
 
 func _reset_players() -> void:
 	if player.has_method("reset_to_spawn"):
-		player.reset_to_spawn(hider_spawn.global_transform, true)
+		var human_is_hider := _human_is_hider()
+		var spawn := hider_spawn.global_transform if human_is_hider else seeker_spawn.global_transform
+		player.reset_to_spawn(spawn, human_is_hider)
 	for hider in hiders:
 		if is_instance_valid(hider):
 			if hider.has_method("reset_for_round"):
@@ -215,20 +252,90 @@ func _reset_players() -> void:
 			seeker.reset_for_round()
 
 func _refresh_hider_count() -> void:
+	var roster := _roster()
+	if roster:
+		var counts: Dictionary = roster.get_hider_counts()
+		remaining_hiders = int(counts.get("remaining", 0))
+		total_hiders = int(counts.get("total", 0))
+		return
 	remaining_hiders = 0
 	for hider in hiders:
 		if is_instance_valid(hider) and hider.has_method("is_hidden_alive") and hider.is_hidden_alive():
 			remaining_hiders += 1
 
 func _emit_role_counts() -> void:
-	var seeker_count := get_tree().get_nodes_in_group("seekers").size()
-	if player and is_instance_valid(player) and not player.is_hider:
-		seeker_count += 1 if not player.is_in_group("seekers") else 0
-	role_counts_changed.emit(remaining_hiders, seeker_count)
+	var roster := _roster()
+	if roster:
+		var counts: Dictionary = roster.get_role_counts()
+		role_counts_changed.emit(int(counts.get("hiders", 0)), int(counts.get("seekers", 0)))
+		return
+	role_counts_changed.emit(remaining_hiders, seekers.size())
 
 func _on_hider_found(_hider: Node) -> void:
+	var roster := _roster()
+	if roster:
+		var participant_id: String = roster.get_id_for_node(_hider)
+		if not participant_id.is_empty():
+			roster.set_found(participant_id, true)
+			if _hider.is_in_group("seekers"):
+				roster.set_role(participant_id, "SEEKER")
 	_refresh_hider_count()
 	hider_count_changed.emit(remaining_hiders, total_hiders)
 	_emit_role_counts()
 	if state == RoundState.SEARCHING and remaining_hiders <= 0:
 		_finish_round("SEEKER")
+
+func _sync_roster() -> void:
+	var roster := _roster()
+	if roster == null:
+		return
+	roster.clear()
+	var human_role := "HIDER" if _human_is_hider() else "SEEKER"
+	var display_name := "Player"
+	var session := get_node_or_null("/root/SessionManager")
+	if session and not session.display_name.is_empty():
+		display_name = session.display_name
+	roster.register_participant("player:local", player, display_name, human_role, false)
+	for index in range(hiders.size()):
+		var hider: Node = hiders[index]
+		if is_instance_valid(hider):
+			roster.register_participant("bot:hider:%d" % index, hider, hider.name, "HIDER", true)
+	for index in range(seekers.size()):
+		var seeker: Node = seekers[index]
+		if is_instance_valid(seeker):
+			roster.register_participant("bot:seeker:%d" % index, seeker, seeker.name, "SEEKER", true)
+	roster.begin_round()
+	roster_changed.emit()
+
+func _refresh_roster_after_participants_changed() -> void:
+	if _started and is_inside_tree():
+		_sync_roster()
+		_refresh_hider_count()
+		hider_count_changed.emit(remaining_hiders, total_hiders)
+
+func _on_roster_changed() -> void:
+	if not _started or not is_inside_tree():
+		return
+	_refresh_hider_count()
+	hider_count_changed.emit(remaining_hiders, total_hiders)
+	_emit_role_counts()
+	roster_changed.emit()
+
+func _has_valid_participants() -> bool:
+	var roster := _roster()
+	if roster:
+		var counts: Dictionary = roster.get_role_counts()
+		return roster.get_participant_count() >= 2 and int(counts.get("hiders", 0)) >= 1 and int(counts.get("seekers", 0)) >= 1
+	return player != null and (hiders.size() + seekers.size()) >= 1
+
+func _human_is_hider() -> bool:
+	if player_role == "Seeker":
+		return false
+	if player_role == "Hider":
+		return true
+	return not seekers.is_empty()
+
+func _roster() -> Node:
+	if not is_inside_tree():
+		return null
+	return get_node_or_null("/root/MatchRoster")
